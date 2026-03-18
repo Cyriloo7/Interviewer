@@ -1,5 +1,0 @@
-langchain
-langchain_google_genai
-streamlit
-dotenv
-pymupdf

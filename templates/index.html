@@ -1,0 +1,4731 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Interviewer — AI Question Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #0e0e10;
+        --paper: #f5f2eb;
+        --cream: #fffdf7;
+        --accent: #c84b31;
+        --gold: #d4a843;
+        --muted: #7a7567;
+        --border: #ddd9ce;
+        --chip-bg: #eeeae0;
+        --card-bg: #fffdf9;
+        --easy: #2d7a4f;
+        --medium: #b07d00;
+        --hard: #b03030;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Outfit", sans-serif;
+        background: var(--paper);
+        color: var(--ink);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      /* Grain overlay */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+        pointer-events: none;
+        z-index: 9999;
+        opacity: 0.55;
+      }
+
+      /* ── HEADER ── */
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.5rem 3rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--cream);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+      .logo {
+        font-family: "DM Serif Display", serif;
+        font-size: 1.6rem;
+        letter-spacing: -0.02em;
+      }
+      .logo span {
+        color: var(--accent);
+        font-style: italic;
+      }
+      .badge {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.68rem;
+        font-weight: 500;
+        padding: 4px 10px;
+        border-radius: 2px;
+        background: var(--ink);
+        color: var(--paper);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      /* ── HERO ── */
+      .hero {
+        padding: 5rem 3rem 3rem;
+        max-width: 780px;
+        margin: 0 auto;
+        text-align: center;
+      }
+      .hero-eyebrow {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.72rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 1rem;
+      }
+      .hero h1 {
+        font-family: "DM Serif Display", serif;
+        font-size: clamp(2.4rem, 5vw, 3.8rem);
+        line-height: 1.1;
+        letter-spacing: -0.03em;
+        margin-bottom: 1.2rem;
+      }
+      .hero h1 em {
+        color: var(--accent);
+        font-style: italic;
+      }
+      .hero p {
+        color: var(--muted);
+        font-size: 1.05rem;
+        line-height: 1.65;
+        max-width: 560px;
+        margin: 0 auto;
+      }
+
+      /* ── FORM CARD ── */
+      .form-wrap {
+        max-width: 780px;
+        margin: 2.5rem auto 0;
+        padding: 0 3rem 4rem;
+      }
+      .form-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+        box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+      }
+
+      .tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border);
+      }
+      .tab {
+        flex: 1;
+        padding: 1rem 1.5rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        letter-spacing: 0.02em;
+        cursor: pointer;
+        border: none;
+        background: transparent;
+        color: var(--muted);
+        transition: all 0.2s;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+      }
+      .tab.active {
+        color: var(--accent);
+        border-bottom-color: var(--accent);
+        background: var(--cream);
+      }
+      .tab:hover:not(.active) {
+        background: var(--chip-bg);
+      }
+
+      .tab-panel {
+        display: none;
+        padding: 2rem;
+      }
+      .tab-panel.active {
+        display: block;
+      }
+
+      label {
+        display: block;
+        font-size: 0.78rem;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 0.5rem;
+      }
+      textarea,
+      input[type="number"] {
+        width: 100%;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.82rem;
+        padding: 0.9rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        background: var(--paper);
+        color: var(--ink);
+        resize: vertical;
+        transition: border-color 0.2s;
+        margin-bottom: 1.2rem;
+      }
+      textarea:focus,
+      input[type="number"]:focus {
+        outline: none;
+        border-color: var(--accent);
+        background: var(--cream);
+      }
+      input[type="number"] {
+        width: 120px;
+        resize: none;
+      }
+
+      .drop-zone {
+        border: 2px dashed var(--border);
+        border-radius: 4px;
+        padding: 3rem 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-bottom: 1.2rem;
+        background: var(--paper);
+      }
+      .drop-zone:hover,
+      .drop-zone.drag-over {
+        border-color: var(--accent);
+        background: #fdf5f3;
+      }
+      .drop-zone-icon {
+        font-size: 2.2rem;
+        margin-bottom: 0.8rem;
+      }
+      .drop-zone p {
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+      .drop-zone strong {
+        color: var(--accent);
+      }
+      .file-name {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.78rem;
+        color: var(--easy);
+        margin-top: 0.4rem;
+      }
+
+      .form-row {
+        display: flex;
+        gap: 1.5rem;
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+      .form-row > * {
+        flex: 1;
+        min-width: 200px;
+      }
+      .form-row .narrow {
+        flex: 0 0 auto;
+        min-width: unset;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.85rem 2rem;
+        font-family: "Outfit", sans-serif;
+        font-weight: 600;
+        font-size: 0.9rem;
+        letter-spacing: 0.02em;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: white;
+      }
+      .btn-primary:hover {
+        background: #a83a22;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(200, 75, 49, 0.3);
+      }
+      .btn-primary:active {
+        transform: translateY(0);
+      }
+      .btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        transform: none !important;
+      }
+
+      /* ── PROGRESS ── */
+      #progress {
+        max-width: 780px;
+        margin: 0 auto;
+        padding: 0 3rem;
+        display: none;
+      }
+      .progress-card {
+        background: var(--ink);
+        color: var(--paper);
+        border-radius: 4px;
+        padding: 1.8rem 2rem;
+      }
+      .progress-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.4rem;
+      }
+      .progress-title {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.7rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--gold);
+      }
+      .progress-elapsed {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.68rem;
+        color: #555;
+      }
+      /* overall progress bar */
+      .progress-bar-track {
+        height: 3px;
+        background: #222;
+        border-radius: 2px;
+        margin-bottom: 1.4rem;
+        overflow: hidden;
+      }
+      .progress-bar-fill {
+        height: 100%;
+        border-radius: 2px;
+        background: var(--gold);
+        transition: width 0.5s ease;
+        width: 0%;
+      }
+      .step-list {
+        list-style: none;
+      }
+      .step-list li {
+        font-size: 0.86rem;
+        padding: 0.42rem 0;
+        color: #444;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        transition:
+          color 0.25s,
+          transform 0.2s;
+      }
+      .step-list li.active {
+        color: var(--paper);
+        transform: translateX(4px);
+      }
+      .step-list li.done {
+        color: #4a9;
+      }
+      .step-label {
+        flex: 1;
+      }
+      .step-time {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.6rem;
+        color: #555;
+        min-width: 3.5rem;
+        text-align: right;
+      }
+      .step-list li.done .step-time {
+        color: #4a9;
+      }
+      .step-icon {
+        font-size: 0.9rem;
+        width: 1.2rem;
+        text-align: center;
+        flex-shrink: 0;
+      }
+      .spinner {
+        width: 13px;
+        height: 13px;
+        border: 2px solid #333;
+        border-top-color: var(--gold);
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+        flex-shrink: 0;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ── RESULTS ── */
+      #results {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 3rem 3rem 6rem;
+        display: none;
+        animation: fadeUp 0.5s ease both;
+      }
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .section-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.68rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 1.2rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border);
+      }
+
+      /* Candidate banner */
+      .candidate-banner {
+        background: var(--ink);
+        color: var(--paper);
+        border-radius: 4px;
+        padding: 2rem 2.5rem;
+        margin-bottom: 2rem;
+        display: flex;
+        gap: 2rem;
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+      .candidate-initial {
+        width: 64px;
+        height: 64px;
+        background: var(--accent);
+        border-radius: 3px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "DM Serif Display", serif;
+        font-size: 1.8rem;
+        flex-shrink: 0;
+      }
+      .candidate-info {
+        flex: 1;
+        min-width: 200px;
+      }
+      .candidate-name {
+        font-family: "DM Serif Display", serif;
+        font-size: 1.8rem;
+        letter-spacing: -0.02em;
+        margin-bottom: 0.3rem;
+      }
+      .candidate-title {
+        color: #aaa;
+        font-size: 0.92rem;
+        margin-bottom: 0.8rem;
+      }
+      .meta-pills {
+        display: flex;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+      }
+      .meta-pill {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.68rem;
+        letter-spacing: 0.04em;
+        padding: 3px 10px;
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .meta-pill.accent {
+        background: var(--accent);
+      }
+      .fit-badge {
+        margin-left: auto;
+        text-align: right;
+      }
+      .fit-number {
+        font-family: "DM Serif Display", serif;
+        font-size: 3rem;
+        line-height: 1;
+        color: var(--gold);
+      }
+      .fit-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.62rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #666;
+      }
+
+      /* Skills */
+      .skills-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+      }
+      .skill-chip {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.72rem;
+        padding: 4px 12px;
+        border-radius: 2px;
+        background: var(--chip-bg);
+        border: 1px solid var(--border);
+        color: var(--ink);
+      }
+      .skill-chip.lang {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: #fdf0ed;
+      }
+
+      /* Topics */
+      .topics-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        margin-bottom: 2rem;
+      }
+      .topic-tag {
+        font-size: 0.8rem;
+        font-weight: 500;
+        padding: 5px 14px;
+        border-radius: 20px;
+        background: var(--chip-bg);
+        border: 1px solid var(--border);
+        color: var(--muted);
+      }
+
+      /* GitHub */
+      .github-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+      .github-card {
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 1.2rem 1.4rem;
+        background: var(--card-bg);
+      }
+      .github-user {
+        font-weight: 600;
+        font-size: 0.92rem;
+        margin-bottom: 0.3rem;
+      }
+      .github-bio {
+        color: var(--muted);
+        font-size: 0.8rem;
+        margin-bottom: 0.8rem;
+      }
+      .github-repos {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .github-repo {
+        font-size: 0.78rem;
+        padding: 6px 10px;
+        background: var(--paper);
+        border-radius: 3px;
+        border-left: 3px solid var(--gold);
+      }
+      .github-repo-name {
+        font-weight: 600;
+        margin-bottom: 2px;
+      }
+      .github-repo-meta {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.65rem;
+        color: var(--muted);
+      }
+
+      /* Summary */
+      .summary-box {
+        background: var(--card-bg);
+        border-left: 3px solid var(--gold);
+        padding: 1.2rem 1.5rem;
+        font-size: 0.92rem;
+        line-height: 1.7;
+        color: var(--ink);
+        border-radius: 0 4px 4px 0;
+        margin-bottom: 2.5rem;
+      }
+
+      /* Questions */
+      .questions-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1.2rem;
+      }
+      .q-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+        transition: box-shadow 0.2s;
+      }
+      .q-card:hover {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
+      }
+      .q-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--paper);
+      }
+      .q-num {
+        font-family: "DM Serif Display", serif;
+        font-size: 1.6rem;
+        color: var(--border);
+        min-width: 2rem;
+        line-height: 1;
+      }
+      .q-meta {
+        flex: 1;
+      }
+      .q-category {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.65rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 2px;
+      }
+      .q-difficulty {
+        display: inline-block;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.62rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 2px 8px;
+        border-radius: 2px;
+      }
+      .q-difficulty.easy {
+        background: #e8f5ee;
+        color: var(--easy);
+      }
+      .q-difficulty.medium {
+        background: #fdf3d8;
+        color: var(--medium);
+      }
+      .q-difficulty.hard {
+        background: #fce8e8;
+        color: var(--hard);
+      }
+      .q-body {
+        padding: 1.2rem 1.5rem;
+      }
+      .q-text {
+        font-size: 0.97rem;
+        line-height: 1.65;
+        margin-bottom: 1rem;
+        font-weight: 400;
+      }
+      .q-followup {
+        font-size: 0.85rem;
+        color: var(--muted);
+        line-height: 1.6;
+        padding: 0.8rem 1rem;
+        background: var(--paper);
+        border-radius: 3px;
+        border-left: 2px solid var(--accent);
+        margin-bottom: 0.8rem;
+      }
+      .q-followup-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.6rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 4px;
+      }
+      .q-rationale {
+        font-size: 0.78rem;
+        color: var(--muted);
+        font-style: italic;
+        line-height: 1.5;
+      }
+
+      /* Errors */
+      .error-box {
+        background: #fce8e8;
+        border: 1px solid #f5c5c5;
+        border-radius: 3px;
+        padding: 1rem 1.2rem;
+        font-size: 0.82rem;
+        color: #8b2020;
+        margin-bottom: 1.5rem;
+      }
+
+      /* Divider */
+      .divider {
+        height: 1px;
+        background: var(--border);
+        margin: 2rem 0;
+      }
+
+      /* Reset */
+      #reset-btn {
+        margin-top: 3rem;
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--muted);
+      }
+      #reset-btn:hover {
+        border-color: var(--ink);
+        color: var(--ink);
+      }
+
+      @media (max-width: 640px) {
+        header {
+          padding: 1rem 1.5rem;
+        }
+        .hero,
+        .form-wrap,
+        #progress,
+        #results {
+          padding-left: 1.5rem;
+          padding-right: 1.5rem;
+        }
+        .candidate-banner {
+          flex-direction: column;
+        }
+        .fit-badge {
+          margin-left: 0;
+        }
+      }
+
+      /* Answer inputs */
+      .q-answer-wrap {
+        margin-top: 1rem;
+        border-top: 1px solid var(--border);
+        padding-top: 1rem;
+      }
+      .q-answer-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.6rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 0.4rem;
+      }
+      .q-answer-input {
+        width: 100%;
+        font-family: "Outfit", sans-serif;
+        font-size: 0.88rem;
+        line-height: 1.55;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        background: var(--paper);
+        color: var(--ink);
+        resize: vertical;
+        min-height: 80px;
+        transition: border-color 0.2s;
+      }
+      .q-answer-input:focus {
+        outline: none;
+        border-color: var(--accent);
+        background: var(--cream);
+      }
+
+      /* Score panel on each card */
+      .q-score-panel {
+        display: none;
+        background: var(--chip-bg);
+        border-top: 1px solid var(--border);
+        padding: 1rem 1.5rem;
+      }
+      .q-score-panel.visible {
+        display: block;
+      }
+      .q-score-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 0.6rem;
+      }
+      .q-score-bar-wrap {
+        flex: 1;
+        height: 6px;
+        background: var(--border);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .q-score-bar {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.6s ease;
+        background: var(--easy);
+      }
+      .q-score-bar.mid {
+        background: var(--medium);
+      }
+      .q-score-bar.low {
+        background: var(--hard);
+      }
+      .q-score-num {
+        font-family: "DM Serif Display", serif;
+        font-size: 1.4rem;
+        line-height: 1;
+        min-width: 2.5rem;
+        text-align: right;
+      }
+      .q-score-feedback {
+        font-size: 0.84rem;
+        line-height: 1.55;
+        color: var(--ink);
+        margin-bottom: 0.5rem;
+      }
+      .q-score-tags {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+      .q-score-tag {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.62rem;
+        padding: 2px 9px;
+        border-radius: 2px;
+      }
+      .q-score-tag.strength {
+        background: #e8f5ee;
+        color: var(--easy);
+      }
+      .q-score-tag.gap {
+        background: #fce8e8;
+        color: var(--hard);
+      }
+
+      /* Submit answers bar */
+      .submit-bar {
+        margin-top: 2rem;
+        padding: 1.5rem 2rem;
+        background: var(--ink);
+        color: var(--paper);
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      .submit-bar-text {
+        font-size: 0.9rem;
+        color: #aaa;
+      }
+      .submit-bar-text strong {
+        color: var(--paper);
+      }
+
+      /* Final score card */
+      .final-score-card {
+        margin-top: 2.5rem;
+        border: 2px solid var(--ink);
+        border-radius: 4px;
+        overflow: hidden;
+        display: none;
+        animation: fadeUp 0.4s ease both;
+      }
+      .final-score-card.visible {
+        display: block;
+      }
+      .fsc-header {
+        background: var(--ink);
+        color: var(--paper);
+        padding: 1.2rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+      }
+      .fsc-title {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.68rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin-bottom: 0.2rem;
+      }
+      .fsc-score-big {
+        font-family: "DM Serif Display", serif;
+        font-size: 4rem;
+        line-height: 1;
+        color: var(--gold);
+      }
+      .fsc-score-big span {
+        font-size: 1.6rem;
+      }
+      .fsc-verdict {
+        display: inline-block;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 4px 14px;
+        border-radius: 2px;
+        margin-top: 0.4rem;
+      }
+      .fsc-verdict.hire {
+        background: #2d7a4f;
+        color: white;
+      }
+      .fsc-verdict.consider {
+        background: var(--gold);
+        color: var(--ink);
+      }
+      .fsc-verdict.pass {
+        background: var(--hard);
+        color: white;
+      }
+      .fsc-body {
+        padding: 1.5rem 2rem;
+      }
+      .fsc-rec {
+        font-size: 0.95rem;
+        line-height: 1.7;
+        color: var(--ink);
+        margin-bottom: 1.2rem;
+      }
+      .fsc-breakdown {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 0.8rem;
+      }
+      .fsc-stat {
+        background: var(--paper);
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        padding: 0.8rem 1rem;
+        text-align: center;
+      }
+      .fsc-stat-num {
+        font-family: "DM Serif Display", serif;
+        font-size: 1.8rem;
+        line-height: 1;
+        margin-bottom: 0.2rem;
+      }
+      .fsc-stat-num.green {
+        color: var(--easy);
+      }
+      .fsc-stat-num.amber {
+        color: var(--medium);
+      }
+      .fsc-stat-num.red {
+        color: var(--hard);
+      }
+      .fsc-stat-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.6rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      /* Category score bars inside per-question panel */
+      .cat-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.55rem 1.5rem;
+        margin-top: 0.8rem;
+      }
+      .cat-row {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .cat-label-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+      .cat-name {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.6rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .cat-score-num {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.68rem;
+        font-weight: 500;
+        color: var(--ink);
+      }
+      .cat-bar-wrap {
+        height: 4px;
+        background: var(--border);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+      .cat-bar {
+        height: 100%;
+        border-radius: 2px;
+        transition: width 0.5s ease;
+      }
+      .cat-bar.high {
+        background: var(--easy);
+      }
+      .cat-bar.mid {
+        background: var(--medium);
+      }
+      .cat-bar.low {
+        background: var(--hard);
+      }
+      .cat-note {
+        font-size: 0.72rem;
+        color: var(--muted);
+        line-height: 1.4;
+        font-style: italic;
+        margin-top: 1px;
+      }
+
+      /* Category overview radar in final score card */
+      .fsc-cat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 0.7rem;
+        margin-top: 1.2rem;
+      }
+      .fsc-cat-item {
+        background: var(--paper);
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        padding: 0.7rem 1rem;
+      }
+      .fsc-cat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 5px;
+      }
+      .fsc-cat-name {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.62rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .fsc-cat-score {
+        font-family: "DM Serif Display", serif;
+        font-size: 1.1rem;
+        line-height: 1;
+      }
+      .fsc-cat-score.high {
+        color: var(--easy);
+      }
+      .fsc-cat-score.mid {
+        color: var(--medium);
+      }
+      .fsc-cat-score.low {
+        color: var(--hard);
+      }
+      .fsc-cat-bar-wrap {
+        height: 5px;
+        background: var(--border);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+      .fsc-cat-bar {
+        height: 100%;
+        border-radius: 2px;
+        transition: width 0.6s ease;
+      }
+      .fsc-cat-bar.high {
+        background: var(--easy);
+      }
+      .fsc-cat-bar.mid {
+        background: var(--medium);
+      }
+      .fsc-cat-bar.low {
+        background: var(--hard);
+      }
+      .fsc-weights-note {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.6rem;
+        color: var(--muted);
+        letter-spacing: 0.04em;
+        margin-top: 1rem;
+        padding-top: 0.8rem;
+        border-top: 1px solid var(--border);
+      }
+
+      /* Enhanced GitHub section */
+      .github-card.full-width {
+        width: 100%;
+      }
+      .github-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.4rem;
+      }
+      .github-card-meta {
+        font-size: 0.78rem;
+        color: var(--muted);
+        display: flex;
+        gap: 1rem;
+      }
+      .github-user a {
+        color: var(--ink);
+        text-decoration: none;
+        font-weight: 600;
+      }
+      .github-user a:hover {
+        color: var(--accent);
+      }
+      .github-repos-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 0.7rem;
+        margin-top: 0.8rem;
+      }
+      .github-repo {
+        background: var(--paper);
+        border-radius: 3px;
+        border: 1px solid var(--border);
+        padding: 0.8rem 1rem;
+        font-size: 0.78rem;
+      }
+      .github-repo.deep {
+        border-left: 3px solid var(--gold);
+      }
+      .github-repo-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.3rem;
+      }
+      .github-repo-name {
+        font-weight: 600;
+        font-size: 0.84rem;
+        color: var(--accent);
+        text-decoration: none;
+      }
+      .github-repo-name:hover {
+        text-decoration: underline;
+      }
+      .github-repo-stars {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.65rem;
+        color: var(--gold);
+      }
+      .github-repo-desc {
+        color: var(--muted);
+        font-size: 0.76rem;
+        margin-bottom: 0.4rem;
+        line-height: 1.4;
+      }
+      .github-lang-bar {
+        display: flex;
+        gap: 2px;
+        margin-bottom: 4px;
+        border-radius: 2px;
+        overflow: hidden;
+      }
+      .github-repo-meta {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.62rem;
+        color: var(--muted);
+        margin-bottom: 0.5rem;
+      }
+      .github-tree {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 3px;
+        margin-bottom: 0.5rem;
+      }
+      .tree-file {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.58rem;
+        padding: 1px 6px;
+        background: var(--chip-bg);
+        border-radius: 2px;
+        color: var(--muted);
+      }
+      .tree-more {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.58rem;
+        color: var(--muted);
+        font-style: italic;
+        padding: 1px 4px;
+      }
+      .github-commits {
+        border-top: 1px solid var(--border);
+        padding-top: 0.4rem;
+        margin-top: 0.3rem;
+      }
+      .commit-msg {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.6rem;
+        color: var(--muted);
+        line-height: 1.5;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* ── CODING CHALLENGES ─────────────────────────────────────────────────── */
+      .coding-section {
+        margin-top: 2.5rem;
+      }
+
+      .coding-card {
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        overflow: hidden;
+        margin-bottom: 1.8rem;
+        background: var(--card-bg);
+        transition:
+          box-shadow 0.2s,
+          border-color 0.2s;
+      }
+      .coding-card:hover {
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+        border-color: #c5c0b5;
+      }
+
+      /* Header: two rows — row1: level+title, row2: meta badges */
+      .coding-header {
+        padding: 1.1rem 1.5rem 0.9rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--paper);
+      }
+      .coding-header-row1 {
+        display: flex;
+        align-items: center;
+        gap: 0.9rem;
+        margin-bottom: 0.65rem;
+      }
+      .coding-header-row2 {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+      .coding-level {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 3px 10px;
+        border-radius: 3px;
+        flex-shrink: 0;
+      }
+      .coding-level.basic {
+        background: #e8f5ee;
+        color: var(--easy);
+      }
+      .coding-level.medium {
+        background: #fdf3d8;
+        color: var(--medium);
+      }
+      .coding-level.hard {
+        background: #fce8e8;
+        color: var(--hard);
+      }
+      .coding-level.extra {
+        background: #eee8ff;
+        color: #6c48c5;
+      }
+      .coding-title {
+        font-family: "DM Serif Display", serif;
+        font-size: 1.15rem;
+        line-height: 1.3;
+        color: var(--ink);
+        flex: 1;
+      }
+      .coding-tags {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .coding-tag {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.6rem;
+        padding: 2px 8px;
+        background: var(--chip-bg);
+        border-radius: 2px;
+        color: var(--muted);
+        border: 1px solid var(--border);
+      }
+
+      .coding-body {
+        padding: 1.2rem 1.5rem;
+      }
+      .coding-desc {
+        font-size: 0.92rem;
+        line-height: 1.7;
+        margin-bottom: 1rem;
+        color: var(--ink);
+      }
+      .coding-hint {
+        font-size: 0.8rem;
+        color: var(--muted);
+        font-style: italic;
+        padding: 0.5rem 0.8rem;
+        border-left: 2px solid var(--border);
+        margin-bottom: 1rem;
+      }
+
+      /* Monaco editor container */
+      .monaco-wrap {
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-bottom: 0.8rem;
+      }
+      .monaco-editor-container {
+        height: 260px;
+        width: 100%;
+      }
+
+      /* Run bar */
+      .run-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        margin-bottom: 0.8rem;
+        flex-wrap: wrap;
+      }
+      .btn-run {
+        background: #1e1e2e;
+        color: #cdd6f4;
+        border: 1px solid #45475a;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.78rem;
+        padding: 0.5rem 1.2rem;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .btn-run:hover {
+        background: #313244;
+        border-color: #89b4fa;
+      }
+      .btn-run:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .test-status {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.72rem;
+        color: var(--muted);
+      }
+      .test-status.pass {
+        color: var(--easy);
+      }
+      .test-status.fail {
+        color: var(--hard);
+      }
+
+      /* Output panel */
+      .code-output {
+        background: #1e1e2e;
+        color: #cdd6f4;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.75rem;
+        line-height: 1.6;
+        padding: 0.8rem 1rem;
+        border-radius: 3px;
+        min-height: 60px;
+        max-height: 200px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        display: none;
+        margin-bottom: 0.8rem;
+      }
+      .code-output.visible {
+        display: block;
+      }
+      .code-output .out-pass {
+        color: #a6e3a1;
+      }
+      .code-output .out-fail {
+        color: #f38ba8;
+      }
+      .code-output .out-err {
+        color: #fab387;
+      }
+      .code-output .out-info {
+        color: #89b4fa;
+      }
+
+      /* Test cases display */
+      .test-cases-wrap {
+        margin-bottom: 1rem;
+      }
+      .test-cases-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.6rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 0.4rem;
+      }
+      .test-cases-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+      }
+      .test-chip {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.65rem;
+        padding: 3px 10px;
+        background: var(--chip-bg);
+        border-radius: 2px;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        transition: all 0.2s;
+      }
+      .test-chip.pass {
+        background: #e8f5ee;
+        border-color: var(--easy);
+        color: var(--easy);
+      }
+      .test-chip.fail {
+        background: #fce8e8;
+        border-color: var(--hard);
+        color: var(--hard);
+      }
+
+      /* Coding score panel */
+      .coding-score-panel {
+        display: none;
+        padding: 1rem 1.5rem;
+        border-top: 1px solid var(--border);
+        background: var(--chip-bg);
+      }
+      .coding-score-panel.visible {
+        display: block;
+      }
+      .csp-row {
+        display: flex;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.8rem;
+      }
+      .csp-metric {
+        text-align: center;
+      }
+      .csp-num {
+        font-family: "DM Serif Display", serif;
+        font-size: 1.8rem;
+        line-height: 1;
+      }
+      .csp-lbl {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.58rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+      .csp-feedback {
+        font-size: 0.85rem;
+        line-height: 1.6;
+        color: var(--ink);
+        margin-bottom: 0.5rem;
+      }
+      .csp-tags {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+      .csp-tag {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.62rem;
+        padding: 2px 9px;
+        border-radius: 2px;
+      }
+      .csp-tag.strength {
+        background: #e8f5ee;
+        color: var(--easy);
+      }
+      .csp-tag.improve {
+        background: #fdf3d8;
+        color: var(--medium);
+      }
+
+      /* Pyodide loading indicator */
+      .pyodide-status {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.68rem;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 0;
+      }
+
+      /* Submit coding bar */
+      .submit-coding-bar {
+        margin-top: 1.5rem;
+        padding: 1.2rem 2rem;
+        background: #1e1e2e;
+        color: #cdd6f4;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        display: none;
+      }
+      .submit-coding-bar.visible {
+        display: flex;
+      }
+      .btn-submit-code {
+        background: #89b4fa;
+        color: #1e1e2e;
+        border: none;
+        font-weight: 600;
+        font-family: "Outfit", sans-serif;
+        font-size: 0.88rem;
+        padding: 0.7rem 1.8rem;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .btn-submit-code:hover {
+        background: #b4befe;
+      }
+      .btn-submit-code:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      /* Coding total score */
+      .coding-total-card {
+        margin-top: 1.5rem;
+        border: 2px solid #1e1e2e;
+        border-radius: 4px;
+        overflow: hidden;
+        display: none;
+        animation: fadeUp 0.4s ease both;
+      }
+      .coding-total-card.visible {
+        display: block;
+      }
+      .ctc-header {
+        background: #1e1e2e;
+        color: #cdd6f4;
+        padding: 1rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .ctc-title {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.68rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #89b4fa;
+        margin-bottom: 0.2rem;
+      }
+      .ctc-score {
+        font-family: "DM Serif Display", serif;
+        font-size: 3.5rem;
+        line-height: 1;
+        color: #a6e3a1;
+      }
+      .ctc-score span {
+        font-size: 1.4rem;
+        color: #6c7086;
+      }
+      .ctc-body {
+        padding: 1.2rem 2rem;
+      }
+
+      /* ── SECTION TABS ─────────────────────────────────────────────────────────── */
+      .sec-tab-bar {
+        display: flex;
+        gap: 0;
+        border-bottom: 2px solid var(--border);
+        margin: 2rem 0 0;
+        /* Sticky — pins just below the site header (~72px tall) */
+        position: sticky;
+        top: 72px;
+        z-index: 90;
+        background: var(--paper);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+        /* Bleed to full viewport width so shadow covers the content underneath */
+        margin-left: -3rem;
+        margin-right: -3rem;
+        padding-left: 3rem;
+        padding-right: 3rem;
+      }
+      .sec-tab {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6rem;
+        padding: 1rem 1.5rem;
+        font-family: "Outfit", sans-serif;
+        font-size: 0.92rem;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        background: transparent;
+        color: var(--muted);
+        border-bottom: 3px solid transparent;
+        margin-bottom: -2px;
+        transition: all 0.2s;
+        white-space: nowrap;
+      }
+      .sec-tab:hover:not(.active) {
+        background: var(--chip-bg);
+        color: var(--ink);
+      }
+      .sec-tab.active {
+        color: var(--ink);
+        border-bottom-color: var(--ink);
+        background: var(--cream);
+      }
+      .sec-tab-icon {
+        font-size: 1rem;
+      }
+      .sec-tab-count {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.62rem;
+        font-weight: 500;
+        padding: 2px 8px;
+        border-radius: 20px;
+        background: var(--chip-bg);
+        color: var(--muted);
+        transition: all 0.2s;
+      }
+      .sec-tab.active .sec-tab-count {
+        background: var(--ink);
+        color: var(--paper);
+      }
+      #sectab-coding.active {
+        border-bottom-color: #89b4fa;
+        color: #1e1e2e;
+      }
+      #sectab-coding.active .sec-tab-count {
+        background: #1e1e2e;
+        color: #89b4fa;
+      }
+
+      /* Compensate for sticky tab bar height so content isn't hidden under it */
+      .sec-panel {
+        display: none;
+        padding-top: 1.5rem;
+        scroll-margin-top: 130px;
+      }
+      .sec-panel.active {
+        display: block;
+        animation: fadeUp 0.3s ease both;
+      }
+
+      /* Mobile: reduce padding bleed */
+      @media (max-width: 640px) {
+        .sec-tab-bar {
+          margin-left: -1.5rem;
+          margin-right: -1.5rem;
+          padding-left: 1.5rem;
+          padding-right: 1.5rem;
+          top: 60px;
+        }
+      }
+
+      /* ── COMBINED SCORE CARD ─────────────────────────────────────────────────── */
+      .combined-score-card {
+        display: none;
+        margin-top: 2.5rem;
+        border: 2px solid var(--ink);
+        border-radius: 4px;
+        overflow: hidden;
+        animation: fadeUp 0.4s ease both;
+      }
+      .combined-score-card.visible {
+        display: block;
+      }
+      .csc-header {
+        background: var(--ink);
+        color: var(--paper);
+        padding: 1.2rem 2rem;
+      }
+      .csc-title {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.68rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin-bottom: 0.4rem;
+      }
+      .csc-name {
+        font-family: "DM Serif Display", serif;
+        font-size: 1.5rem;
+      }
+      .csc-body {
+        padding: 1.5rem 2rem;
+      }
+      .csc-scores-row {
+        display: flex;
+        align-items: stretch;
+        gap: 0;
+        flex-wrap: wrap;
+        margin-bottom: 1.2rem;
+      }
+      .csc-block {
+        flex: 1;
+        min-width: 140px;
+        padding: 0 1.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+      .csc-block:first-child {
+        padding-left: 0;
+      }
+      .csc-block-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.62rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 0.4rem;
+      }
+      .csc-block-num {
+        font-family: "DM Serif Display", serif;
+        font-size: 2.8rem;
+        line-height: 1;
+        color: var(--ink);
+        margin-bottom: 0.5rem;
+      }
+      .csc-block-bar-wrap {
+        width: 100%;
+        height: 6px;
+        background: var(--border);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-bottom: 0.5rem;
+      }
+      .csc-block-bar {
+        height: 100%;
+        border-radius: 3px;
+        background: var(--accent);
+        transition: width 0.6s ease;
+      }
+      .csc-block-verdict {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.65rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .csc-divider {
+        width: 1px;
+        background: var(--border);
+        margin: 0 0.5rem;
+        align-self: stretch;
+      }
+      .csc-total-block {
+        border-left: none;
+      }
+      .csc-total-num {
+        font-family: "DM Serif Display", serif;
+        font-size: 4rem;
+        line-height: 1;
+        color: var(--gold);
+        margin-bottom: 0.4rem;
+      }
+      .csc-final-verdict {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 4px 14px;
+        border-radius: 2px;
+        font-weight: 600;
+      }
+      .csc-final-verdict.hire {
+        background: #e8f5ee;
+        color: var(--easy);
+      }
+      .csc-final-verdict.consider {
+        background: #fdf3d8;
+        color: var(--medium);
+      }
+      .csc-final-verdict.pass {
+        background: #fce8e8;
+        color: var(--hard);
+      }
+      .csc-rec {
+        font-size: 0.92rem;
+        line-height: 1.7;
+        color: var(--muted);
+        padding-top: 1rem;
+        border-top: 1px solid var(--border);
+        font-style: italic;
+      }
+
+      /* Runner badge */
+      .runner-badge {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.62rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 3px 10px;
+        border-radius: 3px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        flex-shrink: 0;
+      }
+      .runner-badge.browser {
+        background: #e8f5ee;
+        color: var(--easy);
+        border: 1px solid #c3e6cb;
+      }
+      .runner-badge.server {
+        background: #1e1e2e;
+        color: #89b4fa;
+        border: 1px solid #313244;
+      }
+      .server-note {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.65rem;
+        color: #89b4fa;
+        padding: 0.4rem 0.8rem;
+        margin-bottom: 0.8rem;
+        border-left: 2px solid #1e1e2e;
+        background: rgba(30, 30, 46, 0.06);
+        border-radius: 0 3px 3px 0;
+      }
+
+      /* Brief repo chips */
+      .brief-repos-wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+      }
+      .brief-repo-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 4px 10px;
+        border-radius: 3px;
+        border: 1px solid var(--border);
+        background: var(--paper);
+        text-decoration: none;
+        color: var(--ink);
+        font-size: 0.78rem;
+        transition: all 0.15s;
+      }
+      .brief-repo-chip:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: #fdf0ed;
+      }
+      .brief-repo-name {
+        font-weight: 600;
+      }
+      .brief-repo-lang {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.6rem;
+        color: var(--muted);
+        padding: 1px 5px;
+        background: var(--chip-bg);
+        border-radius: 2px;
+      }
+      .brief-repo-stars {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.62rem;
+        color: var(--gold);
+      }
+
+      /* ── GITHUB PROFILE + REPO CARDS ───────────────────────────────────────── */
+      .gh-profile-bar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+        background: var(--ink);
+        color: var(--paper);
+        border-radius: 4px 4px 0 0;
+        padding: 1.2rem 1.8rem;
+        margin-bottom: 0;
+      }
+      .gh-profile-left {
+        flex: 1;
+        min-width: 200px;
+      }
+      .gh-username {
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin-bottom: 0.3rem;
+      }
+      .gh-username a {
+        color: var(--gold);
+        text-decoration: none;
+      }
+      .gh-username a:hover {
+        text-decoration: underline;
+      }
+      .gh-icon {
+        opacity: 0.5;
+        margin-right: 0.3rem;
+      }
+      .gh-bio {
+        font-size: 0.82rem;
+        color: #aaa;
+        line-height: 1.5;
+      }
+      .gh-profile-stats {
+        display: flex;
+        gap: 1.5rem;
+      }
+      .gh-stat {
+        text-align: center;
+      }
+      .gh-stat-num {
+        display: block;
+        font-family: "DM Serif Display", serif;
+        font-size: 1.5rem;
+        color: var(--paper);
+        line-height: 1;
+      }
+      .gh-stat-lbl {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.6rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #666;
+      }
+
+      /* Repo grid */
+      .github-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 0.7rem;
+        padding: 0.8rem 0 1.5rem;
+      }
+      .gh-repo-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 1rem 1.1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        transition:
+          box-shadow 0.15s,
+          border-color 0.15s;
+      }
+      .gh-repo-card:hover {
+        border-color: var(--gold);
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      }
+      .gh-repo-card.is-deep {
+        border-left: 3px solid var(--gold);
+      }
+      .gh-repo-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+      }
+      .gh-repo-name {
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: var(--accent);
+        text-decoration: none;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .gh-repo-name:hover {
+        text-decoration: underline;
+      }
+      .gh-repo-stars {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.68rem;
+        color: var(--gold);
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      .gh-repo-desc {
+        font-size: 0.78rem;
+        color: var(--muted);
+        line-height: 1.4;
+      }
+      .gh-lang-bar-wrap {
+        height: 5px;
+        width: 100%;
+        display: flex;
+        gap: 2px;
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .gh-repo-meta {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.62rem;
+        color: var(--muted);
+      }
+      .gh-commits-mini {
+        border-top: 1px solid var(--border);
+        padding-top: 0.4rem;
+        margin-top: 0.2rem;
+      }
+      .gh-commit {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.6rem;
+        color: var(--muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.6;
+      }
+      .gh-tree-mini {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 3px;
+        margin-top: 0.4rem;
+      }
+      .gh-file {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.58rem;
+        padding: 1px 5px;
+        background: var(--chip-bg);
+        border-radius: 2px;
+        color: var(--muted);
+      }
+      .gh-file-more {
+        color: var(--accent);
+      }
+
+      /* GitHub token optional field */
+      .token-row {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        padding: 0.8rem 1rem;
+        background: var(--chip-bg);
+        border-radius: 3px;
+        border: 1px solid var(--border);
+        margin-bottom: 1.2rem;
+      }
+      .token-row label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.62rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        white-space: nowrap;
+        margin: 0;
+      }
+      .token-input {
+        flex: 1;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.75rem;
+        padding: 4px 8px;
+        border: 1px solid var(--border);
+        border-radius: 2px;
+        background: var(--paper);
+        color: var(--ink);
+      }
+      .token-input:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+      .token-note {
+        font-size: 0.7rem;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+
+      /* ── ADAPTIVE INTERVIEW UI ───────────────────────────────────────────────── */
+
+      /* Coverage bar */
+      .coverage-bar-wrap {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+      }
+      .coverage-label {
+        display: flex;
+        justify-content: space-between;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.68rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 0.5rem;
+      }
+      #coverage-pct {
+        color: var(--easy);
+        font-weight: 600;
+      }
+      .coverage-track {
+        height: 6px;
+        background: var(--border);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-bottom: 0.6rem;
+      }
+      .coverage-fill {
+        height: 100%;
+        background: var(--easy);
+        border-radius: 3px;
+        transition: width 0.5s ease;
+        width: 0%;
+      }
+      .coverage-areas {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+      }
+      .area-chip {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.6rem;
+        padding: 2px 8px;
+        border-radius: 2px;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        transition: all 0.3s;
+      }
+      .area-chip.covered {
+        background: #e8f5ee;
+        border-color: var(--easy);
+        color: var(--easy);
+      }
+      .area-chip.active {
+        background: #fdf3d8;
+        border-color: var(--medium);
+        color: var(--medium);
+      }
+
+      /* Conversation feed — past Q&As */
+      .interview-feed {
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+        margin-bottom: 1.2rem;
+      }
+      .feed-turn {
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+        animation: fadeUp 0.3s ease both;
+      }
+      .feed-q {
+        display: flex;
+        gap: 0.8rem;
+        align-items: flex-start;
+        padding: 0.8rem 1.2rem;
+        background: var(--paper);
+        font-size: 0.88rem;
+        line-height: 1.5;
+      }
+      .feed-q-num {
+        font-family: "DM Serif Display", serif;
+        font-size: 1.2rem;
+        color: var(--border);
+        min-width: 1.8rem;
+        flex-shrink: 0;
+      }
+      .feed-q-text {
+        flex: 1;
+      }
+      .feed-q-cat {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.6rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 0.2rem;
+      }
+      .feed-a {
+        padding: 0.7rem 1.2rem;
+        font-size: 0.85rem;
+        color: var(--muted);
+        line-height: 1.6;
+        border-top: 1px solid var(--border);
+        background: var(--card-bg);
+      }
+      .feed-score-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-left: 0.5rem;
+        vertical-align: middle;
+      }
+      .feed-score-dot.strong {
+        background: var(--easy);
+      }
+      .feed-score-dot.weak {
+        background: var(--hard);
+      }
+      .feed-score-dot.ok {
+        background: var(--medium);
+      }
+
+      /* Current question card */
+      .current-q-card {
+        border: 2px solid var(--ink);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+      }
+      .cq-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.8rem 1.5rem;
+        background: var(--ink);
+        color: var(--paper);
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      .cq-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+      }
+      .cq-num {
+        font-family: "DM Serif Display", serif;
+        font-size: 1.4rem;
+        color: #666;
+      }
+      .cq-category {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.65rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #aaa;
+      }
+      .cq-difficulty {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.62rem;
+        padding: 2px 8px;
+        border-radius: 2px;
+        font-weight: 600;
+      }
+      .cq-difficulty.easy {
+        background: rgba(45, 122, 79, 0.3);
+        color: #a6e3a1;
+      }
+      .cq-difficulty.medium {
+        background: rgba(176, 125, 0, 0.3);
+        color: #f9e2af;
+      }
+      .cq-difficulty.hard {
+        background: rgba(176, 48, 48, 0.3);
+        color: #f38ba8;
+      }
+      .cq-area {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.62rem;
+        color: var(--gold);
+        letter-spacing: 0.04em;
+      }
+      .cq-transition {
+        padding: 0.7rem 1.5rem 0;
+        font-size: 0.84rem;
+        color: var(--muted);
+        font-style: italic;
+        line-height: 1.5;
+      }
+      .cq-question {
+        padding: 1rem 1.5rem;
+        font-size: 1rem;
+        line-height: 1.7;
+        font-weight: 400;
+      }
+      .cq-answer {
+        width: 100%;
+        font-family: "Outfit", sans-serif;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        padding: 1rem 1.5rem;
+        min-height: 120px;
+        border: none;
+        border-top: 1px solid var(--border);
+        background: var(--paper);
+        color: var(--ink);
+        resize: vertical;
+        outline: none;
+      }
+      .cq-answer:focus {
+        background: var(--cream);
+      }
+      .cq-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        padding: 0.8rem 1.5rem;
+        border-top: 1px solid var(--border);
+        background: var(--card-bg);
+      }
+      .cq-loading {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+
+      /* Interview complete banner */
+      .interview-complete-banner {
+        background: var(--ink);
+        color: var(--paper);
+        border-radius: 4px;
+        padding: 1.2rem 1.8rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+      .icb-title {
+        font-family: "DM Serif Display", serif;
+        font-size: 1.2rem;
+        margin-bottom: 0.2rem;
+      }
+      .icb-reason {
+        font-size: 0.82rem;
+        color: #aaa;
+      }
+
+      /* Function signature reference above editor */
+      .fn-signature-ref {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        padding: 0.5rem 0 0.5rem;
+        margin-bottom: 0.4rem;
+      }
+      .fn-sig-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.6rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .fn-sig-code {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.78rem;
+        color: #89b4fa;
+        background: #1e1e2e;
+        padding: 3px 10px;
+        border-radius: 3px;
+      }
+      /* Time badge on challenge header */
+      .coding-time-badge {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.62rem;
+        padding: 3px 10px;
+        border-radius: 3px;
+        background: rgba(212, 168, 67, 0.12);
+        color: var(--gold);
+        border: 1px solid rgba(212, 168, 67, 0.3);
+        letter-spacing: 0.04em;
+        flex-shrink: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="logo">inter<span>viewer</span></div>
+      <div class="badge">AI · v2.0</div>
+    </header>
+
+    <section class="hero">
+      <div class="hero-eyebrow">Resume + GitHub → Interview Pack</div>
+      <h1>Questions that <em>actually</em> dig in</h1>
+      <p>
+        Paste a resume or upload a file. The agent parses skills, checks GitHub
+        repos, and builds a personalised question set your team can use directly
+        in the room.
+      </p>
+    </section>
+
+    <div class="form-wrap">
+      <div class="form-card">
+        <div class="tabs">
+          <button class="tab active" onclick="switchTab('text')">
+            Paste Resume Text
+          </button>
+          <button class="tab" onclick="switchTab('file')">
+            Upload PDF / DOCX
+          </button>
+        </div>
+
+        <!-- TEXT TAB -->
+        <div class="tab-panel active" id="tab-text">
+          <label for="resume-text">Resume Text</label>
+          <textarea
+            id="resume-text"
+            rows="10"
+            placeholder="Paste the full resume text here…"
+          ></textarea>
+
+          <label for="jd-text"
+            >Job Description
+            <span style="text-transform: none; font-weight: 400; color: #bbb"
+              >(optional)</span
+            ></label
+          >
+          <textarea
+            id="jd-text"
+            rows="5"
+            placeholder="Paste the job description to tailor questions and score fit…"
+          ></textarea>
+
+          <div class="token-row">
+            <label>GitHub Token</label>
+            <input
+              type="password"
+              class="token-input"
+              id="gh-token-text"
+              placeholder="Optional — only for private repos"
+              autocomplete="off"
+            />
+            <span class="token-note">Public repos work without a token</span>
+          </div>
+          <div class="form-row">
+            <div class="narrow">
+              <label for="time-budget-text">Coding Time Limit</label>
+              <select
+                id="time-budget-text"
+                style="
+                  font-family: &quot;Outfit&quot;, sans-serif;
+                  font-size: 0.85rem;
+                  padding: 8px 10px;
+                  border: 1px solid var(--border);
+                  border-radius: 3px;
+                  background: var(--paper);
+                  color: var(--ink);
+                "
+              >
+                <option value="60">1 hour (focused)</option>
+                <option value="120">2 hours (comprehensive)</option>
+              </select>
+            </div>
+            <div
+              style="
+                display: flex;
+                align-items: flex-end;
+                padding-bottom: 1.2rem;
+              "
+            >
+              <button
+                class="btn btn-primary"
+                onclick="runFromText()"
+                id="run-text-btn"
+              >
+                <span>Generate Interview</span> <span>→</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- FILE TAB -->
+        <div class="tab-panel" id="tab-file">
+          <label>Resume File</label>
+          <div
+            class="drop-zone"
+            id="drop-zone"
+            onclick="document.getElementById('file-input').click()"
+          >
+            <div class="drop-zone-icon">📄</div>
+            <p>Drop a <strong>PDF or DOCX</strong> here, or click to browse</p>
+            <div class="file-name" id="file-name"></div>
+          </div>
+          <input
+            type="file"
+            id="file-input"
+            accept=".pdf,.docx"
+            style="display: none"
+            onchange="handleFile(this)"
+          />
+
+          <label for="jd-file"
+            >Job Description
+            <span style="text-transform: none; font-weight: 400; color: #bbb"
+              >(optional)</span
+            ></label
+          >
+          <textarea
+            id="jd-file"
+            rows="5"
+            placeholder="Paste the job description…"
+          ></textarea>
+
+          <div class="token-row">
+            <label>GitHub Token</label>
+            <input
+              type="password"
+              class="token-input"
+              id="gh-token-file"
+              placeholder="Optional — only for private repos"
+              autocomplete="off"
+            />
+            <span class="token-note">Public repos work without a token</span>
+          </div>
+          <div class="form-row">
+            <div class="narrow">
+              <label for="time-budget-file">Coding Time Limit</label>
+              <select
+                id="time-budget-file"
+                style="
+                  font-family: &quot;Outfit&quot;, sans-serif;
+                  font-size: 0.85rem;
+                  padding: 8px 10px;
+                  border: 1px solid var(--border);
+                  border-radius: 3px;
+                  background: var(--paper);
+                  color: var(--ink);
+                "
+              >
+                <option value="60">1 hour (focused)</option>
+                <option value="120">2 hours (comprehensive)</option>
+              </select>
+            </div>
+            <div
+              style="
+                display: flex;
+                align-items: flex-end;
+                padding-bottom: 1.2rem;
+              "
+            >
+              <button
+                class="btn btn-primary"
+                onclick="runFromFile()"
+                id="run-file-btn"
+              >
+                <span>Generate Interview</span> <span>→</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROGRESS -->
+    <div id="progress">
+      <div class="progress-card">
+        <div class="progress-header">
+          <div class="progress-title">// agent running</div>
+          <div class="progress-elapsed" id="progress-elapsed">0s</div>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progress-bar-fill"></div>
+        </div>
+        <ul class="step-list" id="step-list">
+          <li data-node="parse_resume">
+            <span class="step-icon">·</span>
+            <span class="step-label">Parsing resume</span>
+            <span class="step-time" id="time-parse_resume"></span>
+          </li>
+          <li data-node="fetch_github">
+            <span class="step-icon">·</span>
+            <span class="step-label">Fetching GitHub profiles</span>
+            <span class="step-time" id="time-fetch_github"></span>
+          </li>
+          <li data-node="score_fit">
+            <span class="step-icon">·</span>
+            <span class="step-label">Scoring fit &amp; level</span>
+            <span class="step-time" id="time-score_fit"></span>
+          </li>
+          <li data-node="build_topics">
+            <span class="step-icon">·</span>
+            <span class="step-label">Building interview topics</span>
+            <span class="step-time" id="time-build_topics"></span>
+          </li>
+          <li data-node="gen_questions">
+            <span class="step-icon">·</span>
+            <span class="step-label">Generating questions</span>
+            <span class="step-time" id="time-gen_questions"></span>
+          </li>
+          <li data-node="gen_coding_challenges">
+            <span class="step-icon">·</span>
+            <span class="step-label">Generating coding challenges</span>
+            <span class="step-time" id="time-gen_coding_challenges"></span>
+          </li>
+          <li data-node="finalize">
+            <span class="step-icon">·</span>
+            <span class="step-label">Writing candidate brief</span>
+            <span class="step-time" id="time-finalize"></span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="results">
+      <div id="error-area"></div>
+
+      <!-- Candidate banner -->
+      <div class="candidate-banner" id="banner"></div>
+
+      <!-- Skills -->
+      <div class="section-label">Skills &amp; Languages</div>
+      <div class="skills-grid" id="skills-grid"></div>
+
+      <!-- Topics -->
+      <div class="section-label">Interview Topics</div>
+      <div class="topics-row" id="topics-row"></div>
+
+      <!-- GitHub -->
+      <div id="github-section" style="display: none">
+        <div class="section-label">GitHub Activity</div>
+        <!-- Profile header row -->
+        <div id="github-profile-header"></div>
+        <!-- Repo grid -->
+        <div class="github-grid" id="github-grid"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Candidate Brief -->
+      <div class="section-label">Candidate Brief</div>
+      <div class="summary-box" id="summary-box"></div>
+
+      <!-- ── TWO-TAB SECTION NAV ── -->
+      <div class="sec-tab-bar" id="sec-tab-bar">
+        <button
+          class="sec-tab active"
+          id="sectab-interview"
+          onclick="switchSection('interview')"
+        >
+          <span class="sec-tab-icon">💬</span>
+          General Questions
+          <span class="sec-tab-count" id="count-interview">—</span>
+        </button>
+        <button
+          class="sec-tab"
+          id="sectab-coding"
+          onclick="switchSection('coding')"
+        >
+          <span class="sec-tab-icon">⌨️</span>
+          Coding Test
+          <span
+            class="sec-tab-count"
+            id="count-coding"
+            style="background: #1e1e2e; color: #89b4fa"
+            >—</span
+          >
+        </button>
+      </div>
+
+      <!-- ══ INTERVIEW PANEL ══ -->
+      <div class="sec-panel active" id="panel-interview">
+        <!-- Coverage progress bar -->
+        <div
+          class="coverage-bar-wrap"
+          id="coverage-bar-wrap"
+          style="display: none"
+        >
+          <div class="coverage-label">
+            <span>JD Coverage</span>
+            <span id="coverage-pct">0%</span>
+          </div>
+          <div class="coverage-track">
+            <div class="coverage-fill" id="coverage-fill"></div>
+          </div>
+          <div class="coverage-areas" id="coverage-areas"></div>
+        </div>
+
+        <!-- Live conversation feed -->
+        <div class="interview-feed" id="interview-feed"></div>
+
+        <!-- Current question card (active) -->
+        <div class="current-q-card" id="current-q-card" style="display: none">
+          <div class="cq-header">
+            <div class="cq-meta">
+              <span class="cq-num" id="cq-num"></span>
+              <span class="cq-category" id="cq-category"></span>
+              <span class="cq-difficulty" id="cq-difficulty"></span>
+            </div>
+            <span class="cq-area" id="cq-area"></span>
+          </div>
+          <div class="cq-transition" id="cq-transition"></div>
+          <div class="cq-question" id="cq-question"></div>
+          <textarea
+            class="cq-answer"
+            id="cq-answer"
+            placeholder="Type the candidate's answer here…"
+          ></textarea>
+          <div class="cq-actions">
+            <button
+              class="btn btn-primary"
+              id="next-q-btn"
+              onclick="submitCurrentAnswer()"
+            >
+              Next Question →
+            </button>
+            <button
+              class="btn"
+              id="end-interview-btn"
+              onclick="endInterview()"
+              style="margin-left: 0.8rem"
+            >
+              End &amp; Score
+            </button>
+            <span class="cq-loading" id="cq-loading" style="display: none">
+              <div
+                class="spinner"
+                style="width: 12px; height: 12px; border-width: 1.5px"
+              ></div>
+              Generating next question…
+            </span>
+          </div>
+        </div>
+
+        <div class="final-score-card" id="final-score-card">
+          <div class="fsc-header">
+            <div>
+              <div class="fsc-title">// interview score</div>
+              <div
+                id="fsc-candidate"
+                style="font-size: 1rem; margin-bottom: 0.5rem"
+              ></div>
+              <div id="fsc-verdict" class="fsc-verdict"></div>
+            </div>
+            <div id="fsc-score-big" class="fsc-score-big"></div>
+          </div>
+          <div class="fsc-body">
+            <div class="fsc-rec" id="fsc-rec"></div>
+            <div class="fsc-breakdown" id="fsc-breakdown"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ CODING PANEL ══ -->
+      <div class="sec-panel" id="panel-coding">
+        <div class="pyodide-status" id="pyodide-status">
+          <div
+            class="spinner"
+            style="width: 10px; height: 10px; border-width: 1.5px"
+          ></div>
+          <span>Loading Python runtime…</span>
+        </div>
+        <div
+          class="coding-intro"
+          id="coding-intro"
+          style="
+            margin: 1rem 0 1.5rem;
+            font-size: 0.88rem;
+            color: var(--muted);
+            line-height: 1.6;
+          "
+        >
+          Three challenges tailored to your stack —
+          <strong>Basic</strong> (Python / PyTorch fundamentals),
+          <strong>Medium</strong> (your actual languages),
+          <strong>Hard</strong> (based on your GitHub projects). Write your
+          solution, hit <strong>▶ Run</strong> to execute against test cases
+          live, then submit for an AI review.
+        </div>
+
+        <div id="coding-list"></div>
+
+        <div class="submit-coding-bar" id="submit-coding-bar">
+          <div style="font-size: 0.88rem; color: #cdd6f4">
+            Done? Submit all challenges for AI code review.
+          </div>
+          <button
+            class="btn-submit-code"
+            id="submit-code-btn"
+            onclick="submitCoding()"
+          >
+            Score My Code →
+          </button>
+        </div>
+
+        <!-- Coding score card -->
+        <div class="coding-total-card" id="coding-total-card">
+          <div class="ctc-header">
+            <div>
+              <div class="ctc-title">// coding assessment</div>
+              <div
+                id="ctc-subtitle"
+                style="font-size: 0.85rem; margin-top: 0.3rem; color: #a6adc8"
+              ></div>
+            </div>
+            <div id="ctc-score" class="ctc-score"></div>
+          </div>
+          <div class="ctc-body" id="ctc-body"></div>
+        </div>
+      </div>
+
+      <!-- ══ COMBINED SCORE CARD ══ -->
+      <div class="combined-score-card" id="combined-score-card">
+        <div class="csc-header">
+          <div class="csc-title">// overall candidate assessment</div>
+          <div id="csc-name" class="csc-name"></div>
+        </div>
+        <div class="csc-body">
+          <div class="csc-scores-row">
+            <div class="csc-block" id="csc-interview-block">
+              <div class="csc-block-label">Interview Score</div>
+              <div class="csc-block-num" id="csc-interview-num">—</div>
+              <div class="csc-block-bar-wrap">
+                <div class="csc-block-bar" id="csc-interview-bar"></div>
+              </div>
+              <div class="csc-block-verdict" id="csc-interview-verdict"></div>
+            </div>
+            <div class="csc-divider"></div>
+            <div class="csc-block" id="csc-coding-block" style="display: none">
+              <div class="csc-block-label">Coding Score</div>
+              <div class="csc-block-num" id="csc-coding-num">—</div>
+              <div class="csc-block-bar-wrap">
+                <div
+                  class="csc-block-bar"
+                  id="csc-coding-bar"
+                  style="background: #89b4fa"
+                ></div>
+              </div>
+              <div class="csc-block-verdict" id="csc-coding-verdict"></div>
+            </div>
+            <div
+              class="csc-divider"
+              id="csc-divider2"
+              style="display: none"
+            ></div>
+            <div class="csc-block csc-total-block">
+              <div class="csc-block-label">Overall</div>
+              <div class="csc-total-num" id="csc-total-num">—</div>
+              <div class="csc-final-verdict" id="csc-final-verdict"></div>
+            </div>
+          </div>
+          <div class="csc-rec" id="csc-rec"></div>
+        </div>
+      </div>
+
+      <button class="btn" id="reset-btn" onclick="resetUI()">
+        ← Start Over
+      </button>
+    </div>
+
+    <script>
+      // ── Tab switching (input form) ─────────────────────────────────────────────
+      function switchTab(name) {
+        document
+          .querySelectorAll(".tab")
+          .forEach((t, i) =>
+            t.classList.toggle(
+              "active",
+              (i === 0 && name === "text") || (i === 1 && name === "file"),
+            ),
+          );
+        document
+          .querySelectorAll(".tab-panel")
+          .forEach((p, i) =>
+            p.classList.toggle(
+              "active",
+              (i === 0 && name === "text") || (i === 1 && name === "file"),
+            ),
+          );
+      }
+
+      // ── Section tab switching (interview / coding) ────────────────────────────
+      function switchSection(name) {
+        ["interview", "coding"].forEach((n) => {
+          document
+            .getElementById(`sectab-${n}`)
+            .classList.toggle("active", n === name);
+          document
+            .getElementById(`panel-${n}`)
+            .classList.toggle("active", n === name);
+        });
+        // Init editors when coding tab first shown
+        if (name === "coding" && currentData?.coding_challenges?.length) {
+          currentData.coding_challenges.forEach((c) => {
+            if (!editors[`editor-${c.id}`]) {
+              setTimeout(
+                () => createEditor(`editor-${c.id}`, c.starter_code || ""),
+                200,
+              );
+            }
+          });
+        }
+        // Scroll the panel top into view, accounting for sticky header + tab bar
+        const panel = document.getElementById(`panel-${name}`);
+        if (panel) {
+          const tabBar = document.getElementById("sec-tab-bar");
+          const tabBarH = tabBar ? tabBar.offsetHeight : 48;
+          const headerH = document.querySelector("header")?.offsetHeight || 72;
+          const offset = headerH + tabBarH + 16;
+          const panelTop =
+            panel.getBoundingClientRect().top + window.scrollY - offset;
+          window.scrollTo({ top: panelTop, behavior: "smooth" });
+        }
+      }
+
+      // ── File drop ─────────────────────────────────────────────────────────────
+      const dz = document.getElementById("drop-zone");
+      dz.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dz.classList.add("drag-over");
+      });
+      dz.addEventListener("dragleave", () => dz.classList.remove("drag-over"));
+      dz.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dz.classList.remove("drag-over");
+        const f = e.dataTransfer.files[0];
+        if (f) setFile(f);
+      });
+      let selectedFile = null;
+      function handleFile(input) {
+        if (input.files[0]) setFile(input.files[0]);
+      }
+      function setFile(f) {
+        selectedFile = f;
+        document.getElementById("file-name").textContent = "✓ " + f.name;
+      }
+
+      // ── Progress animation ────────────────────────────────────────────────────
+      // ── Real-time SSE progress ───────────────────────────────────────────────
+
+      // Nodes that run in parallel — both active simultaneously
+      const PARALLEL_NODES = new Set(["fetch_github", "score_fit"]);
+      // Nodes that also run in parallel after build_topics
+      const PARALLEL_NODES_2 = new Set([
+        "gen_questions",
+        "gen_coding_challenges",
+      ]);
+
+      // State
+      let _activeNodes = new Set(); // currently running (spinner shown)
+      let _startTimes = {}; // node → Date.now() when it started
+      let _progressStart = 0; // Date.now() when agent started
+      let _elapsedTimer = null; // setInterval for clock
+      const TOTAL_STEPS = 7;
+
+      function _iconEl(li) {
+        return li.querySelector(".step-icon, .spinner");
+      }
+
+      function _setIcon(li, type) {
+        const old = _iconEl(li);
+        let el;
+        if (type === "spinner") {
+          el = document.createElement("div");
+          el.className = "spinner";
+        } else {
+          el = document.createElement("span");
+          el.className = "step-icon";
+          el.textContent = type; // '·' or '✓'
+        }
+        if (old) old.replaceWith(el);
+        else li.prepend(el);
+      }
+
+      function resetSteps() {
+        _activeNodes.clear();
+        _startTimes = {};
+        document.querySelectorAll("#step-list li").forEach((li) => {
+          li.classList.remove("active", "done");
+          _setIcon(li, "·");
+          const node = li.dataset.node;
+          const timeEl = document.getElementById(`time-${node}`);
+          if (timeEl) timeEl.textContent = "";
+        });
+        const bar = document.getElementById("progress-bar-fill");
+        if (bar) bar.style.width = "0%";
+        const elapsed = document.getElementById("progress-elapsed");
+        if (elapsed) elapsed.textContent = "0s";
+      }
+
+      function setStepActive(nodeName) {
+        const li = document.querySelector(
+          `#step-list li[data-node="${nodeName}"]`,
+        );
+        if (!li || li.classList.contains("done")) return;
+        _activeNodes.add(nodeName);
+        _startTimes[nodeName] = Date.now();
+        li.classList.add("active");
+        _setIcon(li, "spinner");
+      }
+
+      function setStepDone(nodeName) {
+        const li = document.querySelector(
+          `#step-list li[data-node="${nodeName}"]`,
+        );
+        if (!li) return;
+        _activeNodes.delete(nodeName);
+        li.classList.remove("active");
+        li.classList.add("done");
+        _setIcon(li, "✓");
+        // Show how long this step took
+        if (_startTimes[nodeName]) {
+          const ms = Date.now() - _startTimes[nodeName];
+          const sec = (ms / 1000).toFixed(1);
+          const timeEl = document.getElementById(`time-${nodeName}`);
+          if (timeEl) timeEl.textContent = `${sec}s`;
+        }
+        // Update overall progress bar
+        const doneCount =
+          document.querySelectorAll("#step-list li.done").length;
+        const bar = document.getElementById("progress-bar-fill");
+        if (bar)
+          bar.style.width = `${Math.round((doneCount / TOTAL_STEPS) * 100)}%`;
+      }
+
+      function setAllStepsDone() {
+        document.querySelectorAll("#step-list li").forEach((li) => {
+          const node = li.dataset.node;
+          if (!li.classList.contains("done")) setStepDone(node);
+        });
+        const bar = document.getElementById("progress-bar-fill");
+        if (bar) bar.style.width = "100%";
+      }
+
+      function showProgress() {
+        document.getElementById("progress").style.display = "block";
+        document.getElementById("results").style.display = "none";
+        resetSteps();
+        _progressStart = Date.now();
+        // Live elapsed clock
+        clearInterval(_elapsedTimer);
+        _elapsedTimer = setInterval(() => {
+          const sec = Math.floor((Date.now() - _progressStart) / 1000);
+          const el = document.getElementById("progress-elapsed");
+          if (el)
+            el.textContent =
+              sec < 60 ? `${sec}s` : `${Math.floor(sec / 60)}m ${sec % 60}s`;
+        }, 1000);
+      }
+
+      function hideProgress() {
+        clearInterval(_elapsedTimer);
+        setAllStepsDone();
+        setTimeout(() => {
+          document.getElementById("progress").style.display = "none";
+        }, 800);
+      }
+
+      function onStepEvent(data) {
+        const node = data.node;
+
+        // Mark previous non-parallel nodes as done when a new sequential node starts
+        if (!PARALLEL_NODES.has(node) && !PARALLEL_NODES_2.has(node)) {
+          // Sequential node arrived — mark everything currently active as done
+          [..._activeNodes].forEach((n) => setStepDone(n));
+        } else if (PARALLEL_NODES.has(node)) {
+          // First parallel group (fetch_github / score_fit) — don't kill each other
+          // Mark done anything from a PREVIOUS stage
+          [..._activeNodes]
+            .filter((n) => !PARALLEL_NODES.has(n))
+            .forEach((n) => setStepDone(n));
+        } else if (PARALLEL_NODES_2.has(node)) {
+          // Second parallel group (gen_questions / gen_coding_challenges)
+          [..._activeNodes]
+            .filter((n) => !PARALLEL_NODES_2.has(n))
+            .forEach((n) => setStepDone(n));
+        }
+
+        setStepActive(node);
+      }
+
+      // ── SSE runner ────────────────────────────────────────────────────────────
+      function runWithSSE(url, formData, btnId) {
+        return new Promise((resolve, reject) => {
+          _activeNode = null;
+          showProgress();
+          setLoading(btnId, true);
+
+          // For file uploads we can't use EventSource (GET only).
+          // Use fetch + ReadableStream to parse SSE manually.
+          fetch(url, {
+            method: formData ? "POST" : "GET",
+            body: formData || undefined,
+          })
+            .then(async (res) => {
+              if (!res.ok) {
+                const err = await res
+                  .json()
+                  .catch(() => ({ detail: "Server error" }));
+                throw new Error(err.detail || "Server error");
+              }
+
+              const reader = res.body.getReader();
+              const decoder = new TextDecoder();
+              let buffer = "";
+
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+
+                // Process complete SSE messages (separated by double newline)
+                const parts = buffer.split("\n\n");
+                buffer = parts.pop(); // keep incomplete last chunk
+
+                for (const part of parts) {
+                  const lines = part.trim().split("\n");
+                  let eventType = "message";
+                  let eventData = "";
+                  for (const line of lines) {
+                    if (line.startsWith("event:"))
+                      eventType = line.slice(6).trim();
+                    if (line.startsWith("data:"))
+                      eventData = line.slice(5).trim();
+                  }
+                  if (!eventData) continue;
+
+                  try {
+                    const parsed = JSON.parse(eventData);
+                    if (eventType === "step") {
+                      onStepEvent(parsed);
+                    } else if (eventType === "done") {
+                      // Mark all active nodes as done
+                      [..._activeNodes].forEach((n) => setStepDone(n));
+                      hideProgress();
+                      setLoading(btnId, false);
+                      resolve(parsed);
+                      return;
+                    } else if (eventType === "error") {
+                      hideProgress();
+                      setLoading(btnId, false);
+                      reject(new Error(parsed.message || "Agent error"));
+                      return;
+                    }
+                  } catch (_) {}
+                }
+              }
+            })
+            .catch((err) => {
+              clearInterval(_elapsedTimer);
+              hideProgress();
+              setLoading(btnId, false);
+              reject(err);
+            });
+        });
+      }
+
+      // ── API calls ─────────────────────────────────────────────────────────────
+      async function runFromText() {
+        const text = document.getElementById("resume-text").value.trim();
+        if (!text) {
+          alert("Please paste resume text first.");
+          return;
+        }
+        const jd = document.getElementById("jd-text").value.trim();
+        const ghToken = document.getElementById("gh-token-text").value.trim();
+        const tBudget =
+          parseInt(document.getElementById("time-budget-text").value) || 60;
+        timeBudget = tBudget;
+        // num_questions not used — adaptive interview continues until all JD areas covered
+        const url = `/api/run-stream?resume_text=${encodeURIComponent(text)}&job_description=${encodeURIComponent(jd)}&num_questions=999&github_token=${encodeURIComponent(ghToken)}&time_budget=${tBudget}`;
+        try {
+          const data = await runWithSSE(url, null, "run-text-btn");
+          renderResults(data);
+        } catch (e) {
+          showGlobalError(e.message);
+          setLoading("run-text-btn", false);
+        }
+      }
+
+      async function runFromFile() {
+        if (!selectedFile) {
+          alert("Please select a PDF or DOCX file.");
+          return;
+        }
+        const jd = document.getElementById("jd-file").value.trim();
+        const ghToken = document.getElementById("gh-token-file").value.trim();
+        const tBudget =
+          parseInt(document.getElementById("time-budget-file").value) || 60;
+        timeBudget = tBudget;
+        const form = new FormData();
+        form.append("file", selectedFile);
+        form.append("job_description", jd);
+        form.append("num_questions", "999"); // adaptive — no fixed count
+        form.append("github_token", ghToken);
+        form.append("time_budget", String(tBudget));
+        try {
+          const data = await runWithSSE(
+            "/api/run-stream-file",
+            form,
+            "run-file-btn",
+          );
+          renderResults(data);
+        } catch (e) {
+          showGlobalError(e.message);
+          setLoading("run-file-btn", false);
+        }
+      }
+
+      // ── Category display config ───────────────────────────────────────────────
+      const CAT_META = {
+        technical_accuracy: { label: "Technical Accuracy", weight: "25%" },
+        depth_of_knowledge: { label: "Depth of Knowledge", weight: "20%" },
+        problem_solving: { label: "Problem Solving", weight: "20%" },
+        system_design: { label: "System Design", weight: "15%" },
+        clarity: { label: "Clarity", weight: "10%" },
+        use_of_examples: { label: "Use of Examples", weight: "5%" },
+        role_relevance: { label: "Role Relevance", weight: "3%" },
+        culture_collaboration: {
+          label: "Culture & Collaboration",
+          weight: "2%",
+        },
+      };
+      function catClass(v) {
+        return v >= 7 ? "high" : v >= 4 ? "mid" : "low";
+      }
+      function renderCatBars(cats, notes) {
+        return Object.entries(CAT_META)
+          .map(([key, meta]) => {
+            const score = cats && cats[key] != null ? cats[key] : 0;
+            const note = notes && notes[key] ? notes[key] : "";
+            const cls = catClass(score);
+            const pct = Math.round((score / 10) * 100);
+            return `<div class="cat-row">
+        <div class="cat-label-row"><span class="cat-name">${meta.label}</span><span class="cat-score-num">${score}/10</span></div>
+        <div class="cat-bar-wrap"><div class="cat-bar ${cls}" style="width:${pct}%"></div></div>
+        ${note ? `<div class="cat-note">${esc(note)}</div>` : ""}
+      </div>`;
+          })
+          .join("");
+      }
+
+      // ── Main render ───────────────────────────────────────────────────────────
+      let currentData = null;
+      let interviewScoreData = null;
+      let codingScoreData = null;
+
+      function renderResults(d) {
+        currentData = d;
+        currentData.time_budget = d.time_budget || timeBudget || 60;
+        currentData.job_description = d.job_description || "";
+        interviewScoreData = null;
+        codingScoreData = null;
+
+        // Banner — sanitise all values before rendering
+        // Safely extract candidate info — handle null, undefined, "None" strings
+        function safeStr(v) {
+          return v && v !== "None" && v !== "null" && v !== "undefined"
+            ? String(v)
+            : "";
+        }
+        function safeInt(v) {
+          const n = parseInt(v);
+          return isNaN(n) ? 0 : n;
+        }
+
+        // Try candidate_name first, fall back to parsed_resume.name
+        const rawName =
+          safeStr(d.candidate_name) || safeStr(d.parsed_resume?.name);
+        const candidateName = rawName || "—";
+        const candidateTitle =
+          safeStr(d.title) || safeStr(d.parsed_resume?.title) || "";
+        const yoe =
+          safeInt(d.years_experience) ||
+          safeInt(d.parsed_resume?.years_experience);
+        const fitScore = safeInt(d.fit_score);
+        const initial = rawName ? rawName[0].toUpperCase() : "?";
+
+        document.getElementById("banner").innerHTML = `
+      <div class="candidate-initial">${initial}</div>
+      <div class="candidate-info">
+        <div class="candidate-name">${esc(candidateName)}</div>
+        <div class="candidate-title">${esc(candidateTitle)}</div>
+        <div class="meta-pills">
+          <span class="meta-pill">${yoe} yrs exp</span>
+          <span class="meta-pill accent">${(d.difficulty || "mid").toUpperCase()}</span>
+          ${d.is_technical_role ? '<span class="meta-pill" style="background:#1e1e2e;color:#89b4fa">Technical</span>' : '<span class="meta-pill">Non-Technical</span>'}
+        </div>
+      </div>
+      <div class="fit-badge">
+        <div class="fit-number">${fitScore}<span style="font-size:1.4rem">%</span></div>
+        <div class="fit-label">Fit Score</div>
+      </div>`;
+
+        // Skills
+        const sg = document.getElementById("skills-grid");
+        sg.innerHTML = "";
+        (d.languages || []).forEach((l) =>
+          sg.insertAdjacentHTML(
+            "beforeend",
+            `<span class="skill-chip lang">${esc(l)}</span>`,
+          ),
+        );
+        (d.frameworks || []).forEach((f) =>
+          sg.insertAdjacentHTML(
+            "beforeend",
+            `<span class="skill-chip">${esc(f)}</span>`,
+          ),
+        );
+        (d.skills || []).slice(0, 12).forEach((s) => {
+          if (
+            !(d.languages || []).includes(s) &&
+            !(d.frameworks || []).includes(s)
+          )
+            sg.insertAdjacentHTML(
+              "beforeend",
+              `<span class="skill-chip">${esc(s)}</span>`,
+            );
+        });
+
+        // Topics
+        const tr = document.getElementById("topics-row");
+        tr.innerHTML = "";
+        (d.interview_topics || []).forEach((t) =>
+          tr.insertAdjacentHTML(
+            "beforeend",
+            `<span class="topic-tag">${esc(t)}</span>`,
+          ),
+        );
+
+        // GitHub
+        const ghSec = document.getElementById("github-section");
+        const ghGrid = document.getElementById("github-grid");
+        const ghHeader = document.getElementById("github-profile-header");
+        ghGrid.innerHTML = "";
+        ghHeader.innerHTML = "";
+
+        const LANG_COLORS = {
+          Python: "#3572A5",
+          JavaScript: "#f1e05a",
+          TypeScript: "#2b7489",
+          Java: "#b07219",
+          "C++": "#f34b7d",
+          Go: "#00ADD8",
+          Rust: "#dea584",
+          Ruby: "#701516",
+          "C#": "#178600",
+          HTML: "#e34c26",
+          CSS: "#563d7c",
+          Shell: "#89e051",
+          Jupyter: "#DA5B0B",
+          R: "#198CE7",
+          Kotlin: "#A97BFF",
+        };
+
+        function langBar(langs) {
+          const total = Object.values(langs).reduce((a, b) => a + b, 0) || 1;
+          return Object.entries(langs)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([lang, bytes]) => {
+              const pct = Math.round((bytes / total) * 100);
+              const col = LANG_COLORS[lang] || "#8b949e";
+              return `<span style="display:inline-block;width:${pct}%;height:100%;background:${col};border-radius:2px;"
+                      title="${lang} ${pct}%"></span>`;
+            })
+            .join("");
+        }
+
+        if (d.github_profiles && d.github_profiles.length > 0) {
+          ghSec.style.display = "block";
+
+          d.github_profiles.forEach((p) => {
+            // ── Profile header ──────────────────────────────────────────────
+            ghHeader.insertAdjacentHTML(
+              "beforeend",
+              `
+          <div class="gh-profile-bar">
+            <div class="gh-profile-left">
+              <div class="gh-username">
+                <a href="${esc(p.profile_url || "https://github.com/" + p.username)}" target="_blank">
+                  <span class="gh-icon">⌥</span> @${esc(p.username)}
+                </a>
+              </div>
+              ${p.bio ? `<div class="gh-bio">${esc(p.bio)}</div>` : ""}
+            </div>
+            <div class="gh-profile-stats">
+              <div class="gh-stat"><span class="gh-stat-num">${p.public_repos || 0}</span><span class="gh-stat-lbl">repos</span></div>
+              <div class="gh-stat"><span class="gh-stat-num">${p.followers || 0}</span><span class="gh-stat-lbl">followers</span></div>
+              <div class="gh-stat"><span class="gh-stat-num">${(p.repos || []).filter((r) => r.stars > 0).length}</span><span class="gh-stat-lbl">starred</span></div>
+            </div>
+          </div>`,
+            );
+
+            // ── Repo cards ───────────────────────────────────────────────────
+            const repos = p.repos || [];
+            repos.forEach((r) => {
+              const langs = r.languages || {};
+              const langNames =
+                Object.keys(langs).slice(0, 3).join(" · ") || r.language || "—";
+              const bar = langBar(langs);
+              const commits = r.recent_commits || [];
+              const tree = r.file_tree || [];
+              const isDeep = tree.length > 0;
+
+              ghGrid.insertAdjacentHTML(
+                "beforeend",
+                `
+            <div class="gh-repo-card${isDeep ? " is-deep" : ""}">
+              <div class="gh-repo-top">
+                <a class="gh-repo-name" href="${esc(r.url)}" target="_blank">${esc(r.name)}</a>
+                <span class="gh-repo-stars">★ ${r.stars}</span>
+              </div>
+              ${r.description ? `<div class="gh-repo-desc">${esc(r.description.slice(0, 90))}</div>` : ""}
+              <div class="gh-lang-bar-wrap" title="${langNames}">${bar || '<span style="width:100%;height:100%;display:inline-block;background:var(--border);border-radius:2px"></span>'}</div>
+              <div class="gh-repo-meta">${esc(langNames)}</div>
+              ${
+                commits.length
+                  ? `
+                <div class="gh-commits-mini">
+                  ${commits
+                    .slice(0, 2)
+                    .map(
+                      (c) =>
+                        `<div class="gh-commit">↳ ${esc(c.slice(0, 65))}</div>`,
+                    )
+                    .join("")}
+                </div>`
+                  : ""
+              }
+              ${
+                isDeep && tree.length
+                  ? `
+                <div class="gh-tree-mini">
+                  ${tree
+                    .slice(0, 6)
+                    .map((f) => `<code class="gh-file">${esc(f)}</code>`)
+                    .join("")}
+                  ${tree.length > 6 ? `<code class="gh-file gh-file-more">+${tree.length - 6}</code>` : ""}
+                </div>`
+                  : ""
+              }
+            </div>`,
+              );
+            });
+          });
+        } else {
+          ghSec.style.display = "none";
+        }
+
+        // Summary
+        // Candidate Brief — summary text + GitHub repo list
+        const summaryEl = document.getElementById("summary-box");
+        let summaryHTML = `<div style="margin-bottom:${(d.github_profiles || []).length ? "1rem" : "0"}">${esc(d.summary || "")}</div>`;
+
+        const allRepos = (d.github_profiles || []).flatMap((p) =>
+          (p.repos || []).map((r) => ({ ...r, username: p.username })),
+        );
+        if (allRepos.length) {
+          const repoChips = allRepos
+            .map((r) => {
+              const lang =
+                Object.keys(r.languages || {}).slice(0, 1)[0] ||
+                r.language ||
+                "";
+              return `<a href="${esc(r.url)}" target="_blank" class="brief-repo-chip" title="${esc(r.description || "")}">
+          <span class="brief-repo-name">${esc(r.name)}</span>
+          ${lang ? `<span class="brief-repo-lang">${esc(lang)}</span>` : ""}
+          ${r.stars ? `<span class="brief-repo-stars">★${r.stars}</span>` : ""}
+        </a>`;
+            })
+            .join("");
+          summaryHTML += `
+        <div style="margin-top:.6rem">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem">GitHub Projects</div>
+          <div class="brief-repos-wrap">${repoChips}</div>
+        </div>`;
+        }
+        summaryEl.innerHTML = summaryHTML;
+
+        // Section tab counts
+        const qCount = (d.questions || []).length;
+        const cCount = (d.coding_challenges || []).length;
+        document.getElementById("count-interview").textContent = `${qCount} Q`;
+        document.getElementById("count-coding").textContent = cCount
+          ? `${cCount} challenges`
+          : "N/A";
+
+        // Hide coding tab if non-technical role
+        const codingTab = document.getElementById("sectab-coding");
+        if (!d.is_technical_role || cCount === 0) {
+          codingTab.style.display = "none";
+          document.getElementById("coding-intro").textContent =
+            "No coding challenges for this role.";
+        } else {
+          codingTab.style.display = "";
+        }
+
+        // Start adaptive interview
+        document.getElementById("interview-feed").innerHTML = "";
+        startAdaptiveInterview(d);
+
+        // Render coding challenges (DOM only — editors init when tab opened)
+        // Coding section — fetch time-boxed challenges via /api/coding-session
+        if (d.is_technical_role) {
+          renderCodingSection(d);
+        }
+
+        // Reset score cards
+        document.getElementById("final-score-card").classList.remove("visible");
+        document
+          .getElementById("coding-total-card")
+          .classList.remove("visible");
+        document
+          .getElementById("combined-score-card")
+          .classList.remove("visible");
+        document
+          .getElementById("submit-coding-bar")
+          .classList.remove("visible");
+
+        // Errors
+        const ea = document.getElementById("error-area");
+        ea.innerHTML = "";
+        if (d.errors && d.errors.length)
+          ea.innerHTML = `<div class="error-box">⚠ ${d.errors.map(esc).join(" · ")}</div>`;
+
+        // Default to interview tab
+        switchSection("interview");
+        document.getElementById("results").style.display = "block";
+        document
+          .getElementById("results")
+          .scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      // ── Adaptive Interview State ─────────────────────────────────────────────
+      let conversation = []; // [{question, answer, q_id, covers_area, category, difficulty}]
+      let currentQuestion = null; // the active question object
+      let sessionPlan = {};
+      let timeBudget = 60;
+
+      // ── Start adaptive interview ──────────────────────────────────────────────
+      function startAdaptiveInterview(data) {
+        conversation = [];
+        sessionPlan = data.session_plan || {};
+        timeBudget = data.time_budget || 60;
+
+        // Show coverage bar
+        const wrap = document.getElementById("coverage-bar-wrap");
+        wrap.style.display = "block";
+        renderCoverageBar();
+
+        // Show the opening question
+        const opening = (data.questions || [])[0];
+        if (opening) showQuestion(opening);
+      }
+
+      function renderCoverageBar() {
+        const areas = sessionPlan.jd_areas || [];
+        const covered = new Set(
+          conversation.map((c) => c.covers_area).filter(Boolean),
+        );
+        const pct = areas.length
+          ? Math.round((covered.size / areas.length) * 100)
+          : 0;
+
+        document.getElementById("coverage-pct").textContent = `${pct}%`;
+        document.getElementById("coverage-fill").style.width = `${pct}%`;
+
+        const activeArea = currentQuestion?.covers_area || "";
+        document.getElementById("coverage-areas").innerHTML = areas
+          .map((a) => {
+            const cls = covered.has(a.area)
+              ? "covered"
+              : a.area === activeArea
+                ? "active"
+                : "";
+            return `<span class="area-chip ${cls}" title="Priority ${a.priority}">${esc(a.area)}</span>`;
+          })
+          .join("");
+      }
+
+      function showQuestion(q) {
+        currentQuestion = q;
+        const card = document.getElementById("current-q-card");
+        card.style.display = "block";
+
+        document.getElementById("cq-num").textContent = `Q${q.id}`;
+        document.getElementById("cq-category").textContent = q.category || "";
+        const diffEl = document.getElementById("cq-difficulty");
+        const diff = (q.difficulty || "medium").toLowerCase();
+        diffEl.textContent = diff;
+        diffEl.className = `cq-difficulty ${diff}`;
+        document.getElementById("cq-area").textContent = q.covers_area
+          ? `→ ${q.covers_area}`
+          : "";
+
+        const transEl = document.getElementById("cq-transition");
+        transEl.textContent = q.transition || "";
+        transEl.style.display = q.transition ? "block" : "none";
+
+        document.getElementById("cq-question").textContent = q.question || "";
+        document.getElementById("cq-answer").value = "";
+        document.getElementById("cq-answer").focus();
+        renderCoverageBar();
+
+        card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+
+      function addToFeed(q, answer) {
+        const feed = document.getElementById("interview-feed");
+        const dot = ""; // will update after scoring
+        feed.insertAdjacentHTML(
+          "beforeend",
+          `
+      <div class="feed-turn" id="feed-turn-${q.id}">
+        <div class="feed-q">
+          <div class="feed-q-num">Q${q.id}</div>
+          <div>
+            <div class="feed-q-cat">${esc(q.category || "")} · ${esc((q.difficulty || "").toUpperCase())}</div>
+            <div class="feed-q-text">${esc(q.question || "")}</div>
+          </div>
+        </div>
+        <div class="feed-a">${esc(answer || "(no answer)")}</div>
+      </div>`,
+        );
+      }
+
+      // ── Submit current answer and get next question ───────────────────────────
+      async function submitCurrentAnswer() {
+        if (!currentData || !currentQuestion) return;
+        const answer = document.getElementById("cq-answer").value.trim();
+        const q = currentQuestion;
+
+        // Record in conversation
+        conversation.push({
+          question: q.question,
+          answer: answer || "(no answer)",
+          q_id: q.id,
+          covers_area: q.covers_area || "",
+          category: q.category || "",
+          difficulty: q.difficulty || "medium",
+        });
+
+        // Move to feed
+        addToFeed(q, answer);
+
+        // Hide current card, show loading
+        document.getElementById("current-q-card").style.display = "none";
+        document.getElementById("cq-loading").style.display = "flex";
+
+        try {
+          const res = await fetch("/api/next-question", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              session_plan: sessionPlan,
+              conversation: conversation,
+              parsed_resume: currentData.parsed_resume || {},
+              difficulty: currentData.difficulty || "mid",
+              job_description: currentData.job_description || "",
+            }),
+          });
+          const next = await res.json();
+
+          if (next.interview_complete) {
+            showInterviewComplete(next.completion_reason);
+          } else {
+            showQuestion(next);
+          }
+        } catch (e) {
+          showGlobalError("Failed to get next question: " + e.message);
+        } finally {
+          document.getElementById("cq-loading").style.display = "none";
+        }
+      }
+
+      function showInterviewComplete(reason) {
+        document.getElementById("current-q-card").style.display = "none";
+        const feed = document.getElementById("interview-feed");
+        feed.insertAdjacentHTML(
+          "beforeend",
+          `
+      <div class="interview-complete-banner">
+        <div>
+          <div class="icb-title">Interview Complete</div>
+          <div class="icb-reason">${esc(reason || "All areas covered.")}</div>
+        </div>
+        <button class="btn btn-primary" onclick="endInterview()">
+          Score Interview →
+        </button>
+      </div>`,
+        );
+      }
+
+      async function endInterview() {
+        if (!currentData || conversation.length === 0) return;
+
+        // Include current unanswered question if present
+        const curAnswer = document.getElementById("cq-answer")?.value.trim();
+        if (currentQuestion && curAnswer) {
+          conversation.push({
+            question: currentQuestion.question,
+            answer: curAnswer,
+            q_id: currentQuestion.id,
+            covers_area: currentQuestion.covers_area || "",
+            category: currentQuestion.category || "",
+            difficulty: currentQuestion.difficulty || "medium",
+          });
+          addToFeed(currentQuestion, curAnswer);
+          document.getElementById("current-q-card").style.display = "none";
+        }
+
+        const answers = conversation.map((c) => ({
+          question_id: c.q_id,
+          question: c.question,
+          answer: c.answer,
+        }));
+
+        const btn = document.getElementById("end-interview-btn");
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = "Scoring…";
+        }
+
+        try {
+          const res = await fetch("/api/score", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              candidate_name: currentData.candidate_name || "",
+              title: currentData.title || "",
+              years_experience: parseInt(currentData.years_experience) || 0,
+              difficulty: currentData.difficulty || "mid",
+              parsed_resume: currentData.parsed_resume || {},
+              answers,
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            const detail = Array.isArray(data.detail)
+              ? data.detail
+                  .map((e) => `${e.loc?.join(".")}: ${e.msg}`)
+                  .join(" | ")
+              : data.detail || "Scoring failed";
+            throw new Error(detail);
+          }
+          interviewScoreData = data;
+          renderInterviewScores(data);
+          maybeShowCombined();
+        } catch (e) {
+          showGlobalError(e.message);
+        } finally {
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = "End & Score";
+          }
+        }
+      }
+
+      function renderInterviewScores(data) {
+        (data.scored_answers || []).forEach((s) => {
+          const panel = document.getElementById(`qscore-${s.question_id}`);
+          if (!panel) return;
+          const ws = (s.weighted_score || 0).toFixed(1);
+          const wsPct = Math.round((s.weighted_score / 10) * 100);
+          const wsClass = catClass(s.weighted_score);
+          panel.innerHTML = `
+        <div class="q-score-row" style="margin-bottom:.6rem">
+          <div class="q-score-bar-wrap" style="height:6px"><div class="q-score-bar ${wsClass}" style="width:${wsPct}%"></div></div>
+          <div class="q-score-num">${ws}<span style="font-size:.75rem;color:var(--muted)">/10</span></div>
+        </div>
+        <div class="q-score-feedback">${esc(s.overall_feedback)}</div>
+        <div class="q-score-tags" style="margin-bottom:.8rem">
+          ${s.strength ? `<span class="q-score-tag strength">✓ ${esc(s.strength)}</span>` : ""}
+          ${s.gap ? `<span class="q-score-tag gap">✗ ${esc(s.gap)}</span>` : ""}
+        </div>
+        <div class="cat-grid">${renderCatBars(s.categories, s.category_notes)}</div>`;
+          panel.classList.add("visible");
+        });
+
+        const score = data.final_interview_score || 0;
+        const verdict =
+          score >= 80 ? "hire" : score >= 60 ? "consider" : "pass";
+        const vLabel =
+          score >= 80
+            ? "Recommend Hire"
+            : score >= 60
+              ? "Further Review"
+              : "Do Not Proceed";
+        document.getElementById("fsc-candidate").textContent =
+          currentData.candidate_name;
+        document.getElementById("fsc-score-big").innerHTML =
+          `${score}<span>/100</span>`;
+        const vEl = document.getElementById("fsc-verdict");
+        vEl.textContent = vLabel;
+        vEl.className = `fsc-verdict ${verdict}`;
+        document.getElementById("fsc-rec").textContent =
+          data.score_summary || "";
+
+        const scored = data.scored_answers || [];
+        const strong = scored.filter(
+          (s) => (s.weighted_score || 0) >= 7,
+        ).length;
+        const weak = scored.filter((s) => (s.weighted_score || 0) < 5).length;
+        const topGaps =
+          [...new Set(scored.map((s) => s.gap).filter(Boolean))]
+            .slice(0, 3)
+            .join(", ") || "—";
+        document.getElementById("fsc-breakdown").innerHTML = `
+      <div class="fsc-stat"><div class="fsc-stat-num green">${strong}</div><div class="fsc-stat-label">Strong answers</div></div>
+      <div class="fsc-stat"><div class="fsc-stat-num red">${weak}</div><div class="fsc-stat-label">Weak answers</div></div>
+      <div class="fsc-stat" style="grid-column:span 2">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.3rem">Top gaps</div>
+        <div style="font-size:.84rem">${esc(topGaps)}</div>
+      </div>`;
+
+        const avgs = data.category_averages || {};
+        const catCards = Object.entries(CAT_META)
+          .map(([key, meta]) => {
+            const avg = avgs[key] != null ? Number(avgs[key]).toFixed(1) : "—";
+            const cls = catClass(Number(avg));
+            const pct = Math.round((Number(avg) / 10) * 100);
+            return `<div class="fsc-cat-item"><div class="fsc-cat-header"><span class="fsc-cat-name">${meta.label}</span><span class="fsc-cat-score ${cls}">${avg}</span></div>
+        <div class="fsc-cat-bar-wrap"><div class="fsc-cat-bar ${cls}" style="width:${pct}%"></div></div></div>`;
+          })
+          .join("");
+        let catSec = document.getElementById("fsc-cat-section");
+        if (!catSec) {
+          catSec = document.createElement("div");
+          catSec.id = "fsc-cat-section";
+          document.getElementById("fsc-breakdown").after(catSec);
+        }
+        catSec.innerHTML = `<div class="section-label" style="margin-top:1.5rem">Category Averages</div>
+      <div class="fsc-cat-grid">${catCards}</div>
+      <div class="fsc-weights-note">Weights: Technical Accuracy 25% · Depth 20% · Problem Solving 20% · System Design 15% · Clarity 10% · Examples 5% · Role Fit 3% · Culture 2%</div>`;
+
+        document.getElementById("final-score-card").classList.add("visible");
+      }
+
+      // ── Monaco + Pyodide ──────────────────────────────────────────────────────
+      const monacoScript = document.createElement("script");
+      monacoScript.src =
+        "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js";
+      document.head.appendChild(monacoScript);
+      let monacoReady = false;
+      monacoScript.onload = () => {
+        require.config({
+          paths: {
+            vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs",
+          },
+        });
+        require(["vs/editor/editor.main"], () => {
+          monacoReady = true;
+        });
+      };
+
+      let pyodide = null;
+      let pyodideLoading = false;
+      let pyodideReady = false;
+
+      // Pyodide packages we can load on demand
+      const PYODIDE_LOADABLE = [
+        "numpy",
+        "pandas",
+        "scipy",
+        "sympy",
+        "networkx",
+      ];
+      const loadedPkgs = new Set();
+
+      async function ensurePyodide(requiredPackages = []) {
+        if (!pyodideReady) {
+          if (pyodideLoading) {
+            while (!pyodideReady) await new Promise((r) => setTimeout(r, 300));
+          } else {
+            pyodideLoading = true;
+            try {
+              const script = document.createElement("script");
+              script.src =
+                "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js";
+              document.head.appendChild(script);
+              await new Promise((res, rej) => {
+                script.onload = res;
+                script.onerror = rej;
+              });
+              pyodide = await window.loadPyodide({
+                indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/",
+              });
+              // Load micropip for extra packages
+              await pyodide.loadPackage("micropip");
+              pyodideReady = true;
+              const statusEl = document.getElementById("pyodide-status");
+              if (statusEl)
+                statusEl.innerHTML =
+                  '<span style="color:var(--easy)">✓ Python runtime ready</span>';
+            } catch (e) {
+              pyodideLoading = false;
+              console.error("Pyodide load failed:", e);
+              return false;
+            }
+          }
+        }
+        // Load any required packages that aren't already loaded
+        const toLoad = requiredPackages.filter(
+          (p) =>
+            PYODIDE_LOADABLE.includes(p.toLowerCase()) &&
+            !loadedPkgs.has(p.toLowerCase()),
+        );
+        for (const pkg of toLoad) {
+          try {
+            await pyodide.loadPackage(pkg);
+            loadedPkgs.add(pkg.toLowerCase());
+          } catch (_) {
+            try {
+              const micropip = pyodide.pyimport("micropip");
+              await micropip.install(pkg);
+              loadedPkgs.add(pkg.toLowerCase());
+            } catch (e2) {
+              console.warn("Could not load", pkg, e2);
+            }
+          }
+        }
+        return true;
+      }
+
+      // Detect packages needed by a challenge from its starter_code / setup_code
+      function detectPackages(challenge) {
+        const src =
+          (challenge.setup_code || "") + " " + (challenge.starter_code || "");
+        const pkgs = [];
+        ["numpy", "pandas", "scipy", "sympy", "networkx"].forEach((p) => {
+          if (src.includes(p)) pkgs.push(p);
+        });
+        return pkgs;
+      }
+
+      const editors = {}; // `editor-${id}` → monaco instance
+      const testResults = {}; // challenge_id → {passed,total,code,stdout,stderr}
+
+      function createEditor(containerId, starterCode) {
+        if (!monacoReady) {
+          setTimeout(() => createEditor(containerId, starterCode), 200);
+          return;
+        }
+        if (
+          document.getElementById(containerId) === null ||
+          editors[containerId]
+        )
+          return;
+        editors[containerId] = monaco.editor.create(
+          document.getElementById(containerId),
+          {
+            value: starterCode || "",
+            language: "python",
+            theme: "vs-dark",
+            fontSize: 13,
+            fontFamily: "'JetBrains Mono', monospace",
+            minimap: { enabled: false },
+            scrollBeyondLastLine: false,
+            lineNumbers: "on",
+            automaticLayout: true,
+            padding: { top: 10, bottom: 10 },
+            overviewRulerLanes: 0,
+          },
+        );
+      }
+
+      // ── Server-side execution for pip-package challenges ─────────────────────
+      async function runCodeServer(
+        challengeId,
+        testCases,
+        setupCode,
+        candidateCode,
+      ) {
+        const outputEl = document.getElementById(`output-${challengeId}`);
+        const runBtn = document.getElementById(`run-btn-${challengeId}`);
+        const statusEl = document.getElementById(`test-status-${challengeId}`);
+
+        runBtn.disabled = true;
+        runBtn.innerHTML =
+          '<div class="spinner" style="width:10px;height:10px;border-width:1.5px;border-top-color:#cdd6f4;border-color:#45475a"></div> Running…';
+        outputEl.className = "code-output visible";
+        outputEl.innerHTML = '<span class="out-info">Running on server…</span>';
+
+        try {
+          const res = await fetch("/api/execute", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              challenge_id: challengeId,
+              setup_code: setupCode || "",
+              candidate_code: candidateCode,
+              test_cases: testCases,
+              timeout: 15,
+            }),
+          });
+
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || "Execution failed");
+
+          const chipResults = [];
+          const outputLines = [];
+          if (data.stdout) outputLines.push(data.stdout);
+
+          for (const r of data.results || []) {
+            if (r.error) {
+              const shortErr = r.error
+                .split("\n")
+                .filter((l) => l.trim())
+                .slice(-3)
+                .join(" | ");
+              outputLines.push(`Test ${r.index + 1}: ✗ ERROR — ${shortErr}`);
+              chipResults.push("fail");
+            } else if (r.passed) {
+              outputLines.push(`Test ${r.index + 1}: ✓ PASS   got=${r.got}`);
+              chipResults.push("pass");
+            } else {
+              outputLines.push(
+                `Test ${r.index + 1}: ✗ FAIL   expected=${r.expected}   got=${r.got}`,
+              );
+              chipResults.push("fail");
+            }
+          }
+
+          if (data.stderr) outputLines.push("── stderr ──\n" + data.stderr);
+
+          // Update chips
+          testCases.forEach((_, i) => {
+            const chip = document.getElementById(`chip-${challengeId}-${i}`);
+            if (chip) chip.className = `test-chip ${chipResults[i] || ""}`;
+          });
+
+          const allPass = data.passed === data.total && data.total > 0;
+          statusEl.textContent = `${data.passed}/${data.total} tests passed`;
+          statusEl.className = `test-status ${allPass ? "pass" : "fail"}`;
+
+          let html = outputLines
+            .map((l) =>
+              l.startsWith("Test") && l.includes("✓")
+                ? `<span class="out-pass">${escRaw(l)}</span>`
+                : l.startsWith("Test") && l.includes("✗")
+                  ? `<span class="out-fail">${escRaw(l)}</span>`
+                  : escRaw(l),
+            )
+            .join("\n");
+          outputEl.innerHTML =
+            html || '<span class="out-info">No output</span>';
+
+          testResults[challengeId] = {
+            passed: data.passed,
+            total: data.total,
+            code: candidateCode,
+            stdout: outputLines.join("\n"),
+            stderr: data.stderr || "",
+          };
+          updateSubmitCodingBar();
+        } catch (e) {
+          outputEl.innerHTML = `<span class="out-err">Server error: ${escRaw(e.message)}</span>`;
+        } finally {
+          runBtn.disabled = false;
+          runBtn.innerHTML = "▶ Run";
+        }
+      }
+
+      // ── Run code ──────────────────────────────────────────────────────────────
+      async function runCode(challengeId, testCasesJson) {
+        const testCases =
+          typeof testCasesJson === "string"
+            ? JSON.parse(testCasesJson)
+            : testCasesJson;
+
+        const outputEl = document.getElementById(`output-${challengeId}`);
+        const runBtn = document.getElementById(`run-btn-${challengeId}`);
+        const statusEl = document.getElementById(`test-status-${challengeId}`);
+
+        runBtn.disabled = true;
+        runBtn.innerHTML =
+          '<div class="spinner" style="width:10px;height:10px;border-width:1.5px;border-top-color:#cdd6f4;border-color:#45475a"></div> Running…';
+        outputEl.className = "code-output visible";
+        outputEl.innerHTML =
+          '<span class="out-info">Loading Python runtime…</span>';
+
+        // Check if this challenge should run on server instead
+        const challengeData = (currentData?.coding_challenges || []).find(
+          (c) => c.id === challengeId,
+        );
+        if (challengeData?.runner === "server") {
+          let code = editors[`editor-${challengeId}`]?.getValue() || "";
+          // Auto-rename first function to solve
+          const sm = code.match(/^def\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(/m);
+          if (sm && sm[1] !== "solve") {
+            const sn = sm[1].replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            code = code.replace(
+              new RegExp("def\\s+" + sn + "\\s*\\(", "g"),
+              "def solve(",
+            );
+            code = code.replace(
+              new RegExp("(?<![\\w.])" + sn + "\\s*\\(", "g"),
+              "solve(",
+            );
+          }
+          await runCodeServer(
+            challengeId,
+            testCases,
+            challengeData.setup_code || "",
+            code,
+          );
+          return;
+        }
+
+        // Load any packages the challenge needs (numpy, pandas, etc.)
+        const pkgsNeeded = challengeData ? detectPackages(challengeData) : [];
+        const ok = await ensurePyodide(pkgsNeeded);
+        if (!ok) {
+          outputEl.innerHTML =
+            '<span class="out-err">Failed to load Python runtime. Check your internet connection.</span>';
+          runBtn.disabled = false;
+          runBtn.innerHTML = "▶ Run";
+          return;
+        }
+
+        const editor = editors[`editor-${challengeId}`];
+        if (!editor) {
+          outputEl.innerHTML = '<span class="out-err">Editor not ready.</span>';
+          runBtn.disabled = false;
+          runBtn.innerHTML = "▶ Run";
+          return;
+        }
+
+        let code = editor.getValue();
+        if (!code.trim()) {
+          outputEl.className = "code-output visible";
+          outputEl.innerHTML =
+            '<span class="out-err">✏️ Write your solution first, then click Run.</span>';
+          runBtn.disabled = false;
+          runBtn.innerHTML = "▶ Run";
+          return;
+        }
+        // Auto-rename first function to solve if candidate used a different name
+        const defMatch = code.match(/^def\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(/m);
+        if (defMatch && defMatch[1] !== "solve") {
+          const oldName = defMatch[1];
+          const safeName = oldName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          code = code.replace(
+            new RegExp("def\\s+" + safeName + "\\s*\\(", "g"),
+            "def solve(",
+          );
+          code = code.replace(
+            new RegExp("(?<![\\w.])" + safeName + "\\s*\\(", "g"),
+            "solve(",
+          );
+        }
+        if (!code.includes("def solve")) {
+          outputEl.className = "code-output visible";
+          outputEl.innerHTML =
+            '<span class="out-err">⚠️ Your solution must define a function named <strong>solve</strong>.</span>';
+          runBtn.disabled = false;
+          runBtn.innerHTML = "▶ Run";
+          return;
+        }
+
+        let stdout = "";
+        let stderr = "";
+        let passCount = 0;
+        const total = testCases.length;
+        const chipResults = new Array(total).fill("fail");
+
+        try {
+          pyodide.setStdout({
+            batched: (t) => {
+              stdout += t;
+            },
+          });
+          pyodide.setStderr({
+            batched: (t) => {
+              stderr += t;
+            },
+          });
+
+          // Inject test cases as a Python variable, then run candidate code + harness
+          // in ONE call so the function defined by the candidate is visible to the harness.
+          pyodide.globals.set("_raw_test_cases", JSON.stringify(testCases));
+
+          // Rename first function to solve if not already named solve
+          const renamedCode = (() => {
+            const m = code.match(/^def\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(/m);
+            if (m && m[1] !== "solve") {
+              const old = m[1];
+              const escaped = old.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+              return code
+                .replace(
+                  new RegExp(`def\\s+${escaped}\\s*\\(`, "g"),
+                  "def solve(",
+                )
+                .replace(new RegExp(`\\b${escaped}\\s*\\(`, "g"), "solve(");
+            }
+            return code;
+          })();
+
+          const fullScript =
+            renamedCode +
+            `
+
+import json as _json
+import traceback as _tb
+
+# Guarantee solve is defined even if candidate used a different name
+if "solve" not in dir():
+    _fns = [v for k, v in list(locals().items()) if callable(v) and not k.startswith("_")]
+    if _fns: solve = _fns[-1]
+
+_test_cases = _json.loads(_raw_test_cases)
+_results = []
+for _i, _tc in enumerate(_test_cases):
+    try:
+        _got = solve(*_tc["input"])
+        _exp = _tc["expected"]
+        _passed = (_got == _exp) or (str(_got) == str(_exp))
+        _results.append({"passed": bool(_passed), "got": repr(_got), "exp": repr(_exp), "err": ""})
+    except Exception as _e:
+        _results.append({"passed": False, "got": "", "exp": repr(_tc.get("expected","")), "err": _tb.format_exc(limit=3)})
+import json as _j2
+print("__RESULTS__" + _j2.dumps(_results))
+`;
+
+          await pyodide.runPythonAsync(fullScript);
+        } catch (e) {
+          stderr += e.message || String(e);
+        }
+
+        // Parse __RESULTS__ sentinel line from stdout
+        const marker = "__RESULTS__";
+        const markerIdx = stdout.indexOf(marker);
+        let resultsData = [];
+        let userStdout = stdout;
+
+        if (markerIdx !== -1) {
+          try {
+            resultsData = JSON.parse(stdout.slice(markerIdx + marker.length));
+            userStdout = stdout.slice(0, markerIdx).trim();
+          } catch (_) {}
+        }
+
+        // Build output lines + chip states
+        const outputLines = [];
+        if (userStdout) outputLines.push(userStdout);
+
+        for (let i = 0; i < total; i++) {
+          const r = resultsData[i];
+          if (!r) {
+            outputLines.push(`Test ${i + 1}: ✗ ERROR — no result`);
+            continue;
+          }
+          if (r.err) {
+            const shortErr = r.err
+              .split("\n")
+              .filter((l) => l.trim())
+              .slice(-2)
+              .join(" | ");
+            outputLines.push(`Test ${i + 1}: ✗ ERROR — ${shortErr}`);
+            chipResults[i] = "fail";
+          } else if (r.passed) {
+            outputLines.push(
+              `Test ${i + 1}: ✓ PASS   input=${JSON.stringify(testCases[i].input)}   got=${r.got}`,
+            );
+            chipResults[i] = "pass";
+            passCount++;
+          } else {
+            outputLines.push(
+              `Test ${i + 1}: ✗ FAIL   input=${JSON.stringify(testCases[i].input)}   expected=${r.exp}   got=${r.got}`,
+            );
+            chipResults[i] = "fail";
+          }
+        }
+
+        runBtn.disabled = false;
+        runBtn.innerHTML = "▶ Run";
+
+        // Update chips
+        testCases.forEach((_, i) => {
+          const chip = document.getElementById(`chip-${challengeId}-${i}`);
+          if (chip) chip.className = `test-chip ${chipResults[i] || ""}`;
+        });
+
+        // Status line
+        const allPass = passCount === total && total > 0;
+        statusEl.textContent = `${passCount}/${total} tests passed`;
+        statusEl.className = `test-status ${allPass ? "pass" : "fail"}`;
+
+        // Render output panel
+        let html = outputLines
+          .map((l) =>
+            l.startsWith("Test") && l.includes("✓")
+              ? `<span class="out-pass">${escRaw(l)}</span>`
+              : l.startsWith("Test") && l.includes("✗")
+                ? `<span class="out-fail">${escRaw(l)}</span>`
+                : escRaw(l),
+          )
+          .join("\n");
+        if (stderr)
+          html +=
+            (html ? "\n" : "") +
+            `<span class="out-err">── Error ──\n${escRaw(stderr)}</span>`;
+        outputEl.innerHTML = html || '<span class="out-info">No output</span>';
+
+        testResults[challengeId] = {
+          passed: passCount,
+          total,
+          code,
+          stdout: outputLines.join("\n"),
+          stderr,
+        };
+        updateSubmitCodingBar();
+      }
+
+      function escRaw(s) {
+        return String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
+      function updateSubmitCodingBar() {
+        if (Object.keys(testResults).length > 0)
+          document.getElementById("submit-coding-bar").classList.add("visible");
+      }
+
+      // ── Fetch and render coding session ─────────────────────────────────────────
+      async function renderCodingSection(data) {
+        const codingIntro = document.getElementById("coding-intro");
+        const codingList = document.getElementById("coding-list");
+        codingList.innerHTML = "";
+
+        // Show time budget info
+        const budget = data.time_budget || timeBudget || 60;
+        if (codingIntro) {
+          codingIntro.innerHTML = `
+        <strong>${budget === 120 ? "2-hour" : "1-hour"} coding session</strong> —
+        challenges are scoped to fit within <strong>${budget} minutes</strong> total,
+        calibrated to your stack and experience.
+        Write your solution, click <strong>▶ Run</strong> to test live, then submit for AI review.`;
+        }
+
+        // Show loading state
+        codingList.innerHTML =
+          '<div style="padding:2rem;text-align:center;color:var(--muted);font-family:JetBrains Mono,monospace;font-size:.8rem">Generating coding challenges…<br><br><div class="spinner" style="margin:.5rem auto;width:16px;height:16px"></div></div>';
+
+        try {
+          const res = await fetch("/api/coding-session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              session_plan: data.session_plan || {},
+              parsed_resume: data.parsed_resume || {},
+              github_profiles: data.github_profiles || [],
+              difficulty: data.difficulty || "mid",
+              time_budget: budget,
+              job_description: data.job_description || "",
+            }),
+          });
+          const result = await res.json();
+          if (!res.ok)
+            throw new Error(result.detail || "Failed to generate challenges");
+
+          const challenges = result.challenges || [];
+          // Store on currentData for submission
+          currentData.coding_challenges = challenges;
+
+          codingList.innerHTML = "";
+          if (challenges.length === 0) {
+            codingList.innerHTML =
+              '<p style="color:var(--muted);padding:1rem">No challenges generated.</p>';
+            return;
+          }
+
+          // Show total time estimate
+          const totalMins = challenges.reduce(
+            (s, c) => s + (c.estimated_minutes || 0),
+            0,
+          );
+          codingList.insertAdjacentHTML(
+            "beforeend",
+            `
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;padding:.6rem 0">
+          ${challenges
+            .map(
+              (c) => `
+            <div style="font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--muted)">
+              <span style="text-transform:uppercase;letter-spacing:.06em">${esc(c.level)}</span>
+              <span style="color:var(--gold);margin-left:.3rem">~${c.estimated_minutes || "?"}min</span>
+            </div>`,
+            )
+            .join("")}
+          <div style="font-family:'JetBrains Mono',monospace;font-size:.7rem;font-weight:600">
+            Total: ~${totalMins}min / ${budget}min
+          </div>
+        </div>`,
+          );
+
+          renderCodingChallenges(challenges);
+          ensurePyodide();
+        } catch (e) {
+          codingList.innerHTML = `<div class="error-box">❌ ${esc(e.message)}</div>`;
+        }
+      }
+
+      // ── Render coding challenges (DOM only, editors lazy) ─────────────────────
+      function renderCodingChallenges(challenges) {
+        if (!challenges || !challenges.length) return;
+        const list = document.getElementById("coding-list");
+        list.innerHTML = "";
+
+        // Start loading Pyodide in background
+        ensurePyodide();
+
+        challenges.forEach((c) => {
+          const level = (c.level || "basic").toLowerCase();
+          const tags = (c.tags || [])
+            .map((t) => `<span class="coding-tag">${esc(t)}</span>`)
+            .join("");
+          const chips = (c.test_cases || [])
+            .map(
+              (tc, i) =>
+                `<span class="test-chip" id="chip-${c.id}-${i}">test ${i + 1}</span>`,
+            )
+            .join("");
+          // Serialize test_cases safely for inline onclick
+          const tcJson = JSON.stringify(c.test_cases || []).replace(
+            /"/g,
+            "&quot;",
+          );
+
+          const runner = c.runner || "browser";
+          const runnerLabel = runner === "server" ? "⚙ Server" : "🌐 Browser";
+          const serverNote =
+            runner === "server"
+              ? `<div class="server-note">Runs on server — torch, django, sklearn and other pip packages available.</div>`
+              : "";
+
+          // Extract just the function signature line(s) from starter_code for reference
+          const starterLines = (c.starter_code || "def solve():").split("\n");
+          const sigLines = starterLines.filter(
+            (l) =>
+              l.trim().startsWith("def ") ||
+              l.trim().startsWith("import ") ||
+              l.trim().startsWith("from "),
+          );
+          const sigRef =
+            sigLines.join("\n") || starterLines[0] || "def solve():";
+
+          // Show estimated time badge
+          const timeBadge = c.estimated_minutes
+            ? `<span class="coding-time-badge">~${c.estimated_minutes} min</span>`
+            : "";
+
+          list.insertAdjacentHTML(
+            "beforeend",
+            `
+        <div class="coding-card" id="coding-card-${c.id}">
+          <div class="coding-header">
+            <div class="coding-header-row1">
+              <span class="coding-level ${level}">${level}</span>
+              <div class="coding-title">${esc(c.title)}</div>
+            </div>
+            <div class="coding-header-row2">
+              <div class="coding-tags">${tags}</div>
+              ${timeBadge}
+              <span class="runner-badge ${runner}">${runnerLabel}</span>
+            </div>
+          </div>
+          <div class="coding-body">
+            ${serverNote}
+            <div class="coding-desc">${esc(c.description)}</div>
+            ${c.solution_hint ? `<div class="coding-hint">💡 ${esc(c.solution_hint)}</div>` : ""}
+            <div class="test-cases-wrap">
+              <div class="test-cases-label">Test Cases</div>
+              <div class="test-cases-list">${chips}</div>
+            </div>
+            <div class="monaco-wrap">
+              <div class="monaco-editor-container" id="editor-${c.id}"></div>
+            </div>
+            <div class="run-bar">
+              <button class="btn-run" id="run-btn-${c.id}"
+                onclick="runCode(${c.id}, this.dataset.tc)"
+                data-tc="${tcJson}">▶ Run</button>
+              <span class="test-status" id="test-status-${c.id}"></span>
+            </div>
+            <div class="code-output" id="output-${c.id}"></div>
+          </div>
+          <div class="coding-score-panel" id="cscore-${c.id}"></div>
+        </div>`,
+          );
+
+          // Init Monaco editor with starter_code pre-filled (signature + pass stub)
+          const delay = 300 + c.id * 100;
+          setTimeout(
+            () => createEditor(`editor-${c.id}`, c.starter_code || ""),
+            delay,
+          );
+        });
+      }
+
+      // ── Submit coding ─────────────────────────────────────────────────────────
+      async function submitCoding() {
+        if (!currentData) return;
+        const submissions = [];
+        (currentData.coding_challenges || []).forEach((c) => {
+          const r = testResults[c.id];
+          const ed = editors[`editor-${c.id}`];
+          submissions.push({
+            challenge_id: c.id,
+            code: r ? r.code : ed ? ed.getValue() : "",
+            passed_tests: r ? r.passed : 0,
+            total_tests: r ? r.total : (c.test_cases || []).length,
+            stdout: r ? r.stdout : "",
+            stderr: r ? r.stderr : "",
+          });
+        });
+
+        const btn = document.getElementById("submit-code-btn");
+        btn.disabled = true;
+        btn.textContent = "Scoring…";
+        try {
+          const res = await fetch("/api/score-coding", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              parsed_resume: currentData.parsed_resume || {},
+              difficulty: currentData.difficulty,
+              coding_challenges: currentData.coding_challenges,
+              submissions,
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            const detail = Array.isArray(data.detail)
+              ? data.detail
+                  .map((e) => `${e.loc?.join(".")}: ${e.msg}`)
+                  .join(" | ")
+              : data.detail || "Scoring failed";
+            throw new Error(detail);
+          }
+          codingScoreData = data;
+          renderCodingScores(data);
+          maybeShowCombined();
+        } catch (e) {
+          showGlobalError("Coding score error: " + e.message);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Score My Code →";
+        }
+      }
+
+      function renderCodingScores(data) {
+        (data.coding_scores || []).forEach((s) => {
+          const panel = document.getElementById(`cscore-${s.challenge_id}`);
+          if (!panel) return;
+          const corrClass =
+            s.correctness >= 7 ? "green" : s.correctness >= 4 ? "amber" : "red";
+          const qualClass =
+            s.code_quality >= 7
+              ? "green"
+              : s.code_quality >= 4
+                ? "amber"
+                : "red";
+          panel.innerHTML = `
+        <div class="csp-row">
+          <div class="csp-metric"><div class="csp-num fsc-stat-num ${corrClass}">${s.correctness}/10</div><div class="csp-lbl">Correctness</div></div>
+          <div class="csp-metric"><div class="csp-num fsc-stat-num ${qualClass}">${s.code_quality}/10</div><div class="csp-lbl">Code Quality</div></div>
+        </div>
+        <div class="csp-feedback">${esc(s.feedback)}</div>
+        <div class="csp-tags">
+          ${s.strengths ? `<span class="csp-tag strength">✓ ${esc(s.strengths)}</span>` : ""}
+          ${s.improvements ? `<span class="csp-tag improve">⟳ ${esc(s.improvements)}</span>` : ""}
+        </div>`;
+          panel.classList.add("visible");
+        });
+
+        const total = data.coding_total_score || 0;
+        const scores = data.coding_scores || [];
+        const avgCorr = scores.length
+          ? (
+              scores.reduce((a, s) => a + s.correctness, 0) / scores.length
+            ).toFixed(1)
+          : 0;
+        const avgQual = scores.length
+          ? (
+              scores.reduce((a, s) => a + s.code_quality, 0) / scores.length
+            ).toFixed(1)
+          : 0;
+        document.getElementById("ctc-score").innerHTML =
+          `${total}<span>/100</span>`;
+        document.getElementById("ctc-subtitle").textContent =
+          `${scores.length} challenge(s) scored`;
+        document.getElementById("ctc-body").innerHTML = `
+      <div style="display:flex;gap:2rem;flex-wrap:wrap">
+        <div class="fsc-stat"><div class="fsc-stat-num green">${avgCorr}</div><div class="fsc-stat-label">Avg Correctness</div></div>
+        <div class="fsc-stat"><div class="fsc-stat-num amber">${avgQual}</div><div class="fsc-stat-label">Avg Code Quality</div></div>
+      </div>`;
+        document.getElementById("coding-total-card").classList.add("visible");
+      }
+
+      // ── Combined score card ───────────────────────────────────────────────────
+      function maybeShowCombined() {
+        const hasCoding =
+          currentData?.is_technical_role &&
+          (currentData?.coding_challenges || []).length > 0;
+        const haveInterview = interviewScoreData !== null;
+        const haveCoding = codingScoreData !== null;
+
+        // Show combined when interview is done (coding optional for non-tech)
+        if (!haveInterview) return;
+        if (hasCoding && !haveCoding) return; // wait for coding too
+
+        const iScore = interviewScoreData.final_interview_score || 0;
+        const cScore = haveCoding
+          ? codingScoreData.coding_total_score || 0
+          : null;
+
+        // Weighted overall: 60% interview + 40% coding if both, else 100% interview
+        const overall =
+          cScore !== null ? Math.round(iScore * 0.6 + cScore * 0.4) : iScore;
+
+        const verdict =
+          overall >= 80 ? "hire" : overall >= 60 ? "consider" : "pass";
+        const vLabel =
+          overall >= 80
+            ? "Recommend Hire"
+            : overall >= 60
+              ? "Further Review"
+              : "Do Not Proceed";
+
+        document.getElementById("csc-name").textContent =
+          currentData.candidate_name;
+
+        // Interview block
+        document.getElementById("csc-interview-num").textContent = `${iScore}`;
+        document.getElementById("csc-interview-bar").style.width = `${iScore}%`;
+        document.getElementById("csc-interview-verdict").textContent =
+          iScore >= 80 ? "Strong" : iScore >= 60 ? "Adequate" : "Weak";
+
+        // Coding block
+        const codingBlock = document.getElementById("csc-coding-block");
+        const codingDivider = document.getElementById("csc-divider2");
+        if (cScore !== null) {
+          document.getElementById("csc-coding-num").textContent = `${cScore}`;
+          document.getElementById("csc-coding-bar").style.width = `${cScore}%`;
+          document.getElementById("csc-coding-verdict").textContent =
+            cScore >= 80 ? "Strong" : cScore >= 60 ? "Adequate" : "Weak";
+          codingBlock.style.display = "";
+          codingDivider.style.display = "";
+        } else {
+          codingBlock.style.display = "none";
+          codingDivider.style.display = "none";
+        }
+
+        // Overall
+        document.getElementById("csc-total-num").textContent = overall;
+        const fv = document.getElementById("csc-final-verdict");
+        fv.textContent = vLabel;
+        fv.className = `csc-final-verdict ${verdict}`;
+        document.getElementById("csc-rec").textContent =
+          interviewScoreData.score_summary || "";
+
+        const card = document.getElementById("combined-score-card");
+        card.classList.add("visible");
+        card.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      // ── Helpers ───────────────────────────────────────────────────────────────
+      function showGlobalError(msg) {
+        document.getElementById("results").style.display = "block";
+        document.getElementById("error-area").innerHTML =
+          `<div class="error-box">❌ ${esc(msg)}</div>`;
+        document
+          .getElementById("results")
+          .scrollIntoView({ behavior: "smooth" });
+      }
+
+      function setLoading(id, loading) {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.disabled = loading;
+        btn.innerHTML = loading
+          ? '<div class="spinner" style="border-top-color:white;border-color:rgba(255,255,255,.3)"></div><span>Running agent…</span>'
+          : "<span>Generate Interview</span><span>→</span>";
+      }
+
+      function resetUI() {
+        // Safe helper — never crashes if element doesn't exist
+        const el = (id) => document.getElementById(id);
+
+        el("results") && (el("results").style.display = "none");
+        [
+          "final-score-card",
+          "coding-total-card",
+          "combined-score-card",
+        ].forEach((id) => el(id)?.classList.remove("visible"));
+        el("submit-coding-bar")?.classList.remove("visible");
+        el("coding-list") && (el("coding-list").innerHTML = "");
+
+        // Reset adaptive interview state
+        el("interview-feed") && (el("interview-feed").innerHTML = "");
+        el("current-q-card") && (el("current-q-card").style.display = "none");
+        el("coverage-bar-wrap") &&
+          (el("coverage-bar-wrap").style.display = "none");
+        conversation = [];
+        currentQuestion = null;
+        sessionPlan = {};
+
+        Object.values(editors).forEach((e) => {
+          try {
+            e.dispose();
+          } catch (_) {}
+        });
+        Object.keys(editors).forEach((k) => delete editors[k]);
+        Object.keys(testResults).forEach((k) => delete testResults[k]);
+
+        el("resume-text") && (el("resume-text").value = "");
+        el("jd-text") && (el("jd-text").value = "");
+        currentData = null;
+        interviewScoreData = null;
+        codingScoreData = null;
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function esc(s) {
+        if (!s) return "";
+        return String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/\n/g, "<br>");
+      }
+    </script>
+  </body>
+</html>
