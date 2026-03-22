@@ -49,6 +49,12 @@ def verdict_label(score: int) -> str:
         return "🟡  FURTHER REVIEW"
     return "❌  DO NOT PROCEED"
 
+def composite_verdict(score: float, interview_score: int) -> str:  # NEW
+    if score >= 75 or (interview_score >= 80):
+        return "✅  RECOMMEND HIRE"
+    elif score >= 60 or interview_score >= 65:
+        return "🟡  FURTHER REVIEW" 
+    return "❌  DO NOT PROCEED"
 
 def score_bar(score: int, width: int = 30) -> str:
     filled = round((score / 10) * width)
@@ -116,12 +122,19 @@ def main():
     print(f"  Fit Score  : {state.get('fit_score', 0)}%")
     print(f"  Level      : {state.get('difficulty', 'mid').upper()}")
 
-    gh = state.get("github_profiles", [])
-    if gh:
-        print(f"\n  GitHub     :", end="")
-        for p in gh:
-            print(f" @{p['username']} ({p.get('public_repos', 0)} repos)", end="")
-        print()
+    # MODIFIED GITHUB SCORING (CHANGE #1)
+    github_profiles = state.get("github_profiles", [])
+    github_score = 50  # Neutral baseline
+    if github_profiles:
+        profile = github_profiles[0]
+        repos = profile.get('public_repos', 0)
+        stars = profile.get('stars', 0)
+        github_score = min(50 + (repos * 3) + min(stars * 0.2, 20), 90)
+        print(f"  GitHub     : @{profile['username']} ({repos} repos)")
+        print(f"  GitHub Score: {score_bar(int(github_score/10))}")
+    else:
+        print("  GitHub     : None provided")
+        print("  GitHub Score: [░░░░░░░░░░] 5/10 (neutral - no profile provided)")
 
     print(f"\n  Topics     : {', '.join(state.get('interview_topics', []))}")
     print(f"\n  Brief      :\n  {state.get('summary', '').replace(chr(10), chr(10) + '  ')}")
@@ -260,12 +273,36 @@ def main():
     print("  FINAL INTERVIEW SCORE")
     sep("═")
 
-    bar_width = 40
-    filled = round((final / 100) * bar_width)
-    pct_bar = "█" * filled + "░" * (bar_width - filled)
-    print(f"\n  [{pct_bar}]  {final}/100")
-    print(f"\n  {verdict_label(final)}")
+    # Dynamic composite scoring
+    fit_score = state.get('fit_score', 0)
+    resume_weight = 0.25
+    interview_weight = 0.50
+    github_weight = 0.15
+    experience_weight = 0.10
 
+    # Adjust weights if no GitHub
+    if not github_profiles:
+        github_weight = 0
+        interview_weight += 0.10
+
+    experience_score = min((parsed.get('years_experience', 0) / 15.0) * 100, 90)
+    
+    composite_score = (
+        fit_score * resume_weight +
+        final * interview_weight + 
+        github_score * github_weight +
+        experience_score * experience_weight
+    )
+
+    bar_width = 40
+    filled = round((composite_score / 100) * bar_width)
+    pct_bar = "█" * filled + "░" * (bar_width - filled)
+    
+    print(f"\n  [{pct_bar}]  {composite_score:.0f}/100")
+    print(f"  Breakdown: Interview({final:.0f}) | Resume({fit_score}) | GitHub({github_score}) | Exp({experience_score:.0f})")
+    print(f"\n  {composite_verdict(composite_score, final)}")
+
+    # [UNCHANGED STATS AND RECOMMENDATION]
     strong_count = sum(1 for s in scored if s.get("weighted_score", 0) >= 7)
     weak_count   = sum(1 for s in scored if s.get("weighted_score", 0) < 5)
     avg_score    = (sum(s.get("weighted_score", 0) for s in scored) / len(scored)) if scored else 0
@@ -297,9 +334,15 @@ def main():
             "title": parsed.get("title"),
             "fit_score": state.get("fit_score"),
             "difficulty": state.get("difficulty"),
-            "final_interview_score": final,
-            "verdict": verdict_label(final).replace("✅  ", "").replace("🟡  ", "").replace("❌  ", ""),
+            "composite_score": composite_score,
+            "interview_score": final,
+            "github_score": github_score,
+            "verdict": composite_verdict(composite_score, final).replace("✅  ", "").replace("🟡  ", "").replace("❌  ", ""),
             "recommendation": rec,
+            "weights": {
+                "resume": resume_weight, "interview": interview_weight, 
+                "github": github_weight, "experience": experience_weight
+            },
             "per_question": [
                 {
                     "id": q.get("id") or (i+1),
