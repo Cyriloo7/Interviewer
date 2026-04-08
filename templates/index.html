@@ -3670,6 +3670,9 @@
       function showInterviewComplete(reason) {
         document.getElementById("current-q-card").style.display = "none";
         const feed = document.getElementById("interview-feed");
+        const codingRequired =
+          currentData?.is_technical_role &&
+          (currentData?.coding_challenges || []).length > 0;
         feed.insertAdjacentHTML(
           "beforeend",
           `
@@ -3678,19 +3681,48 @@
           <div class="icb-title">Interview Complete</div>
           <div class="icb-reason">${esc(reason || "All areas covered.")}</div>
         </div>
-        <button class="btn btn-primary" onclick="endInterview()">
+        <button
+          class="btn btn-primary"
+          id="end-interview-btn-banner"
+          onclick="endInterview()"
+        >
           Score Interview →
         </button>
       </div>`,
         );
+
+        const bannerBtn = document.getElementById("end-interview-btn-banner");
+        if (bannerBtn && codingRequired && codingScoreData === null) {
+          bannerBtn.disabled = true;
+          bannerBtn.textContent = "Score Interview (coding required) →";
+        }
       }
 
       async function endInterview() {
         if (!currentData || conversation.length === 0) return;
 
+        const codingRequired =
+          currentData?.is_technical_role &&
+          (currentData?.coding_challenges || []).length > 0;
+        if (codingRequired && codingScoreData === null) {
+          showGlobalError(
+            "Coding assessment is required for technical roles. Please score your code first.",
+          );
+          switchSection("coding");
+          const bannerBtn = document.getElementById("end-interview-btn-banner");
+          if (bannerBtn) {
+            bannerBtn.disabled = true;
+            bannerBtn.textContent = "Score Interview (coding required) →";
+          }
+          return;
+        }
+
         // Include current unanswered question if present
         const curAnswer = document.getElementById("cq-answer")?.value.trim();
-        if (currentQuestion && curAnswer) {
+        const curQid = currentQuestion?.id;
+        const alreadyRecorded =
+          !!curQid && conversation.some((c) => c.q_id === curQid);
+        if (currentQuestion && curAnswer && !alreadyRecorded) {
           conversation.push({
             question: currentQuestion.question,
             answer: curAnswer,
@@ -3710,9 +3742,14 @@
         }));
 
         const btn = document.getElementById("end-interview-btn");
+        const bannerBtn = document.getElementById("end-interview-btn-banner");
         if (btn) {
           btn.disabled = true;
           btn.textContent = "Scoring…";
+        }
+        if (bannerBtn) {
+          bannerBtn.disabled = true;
+          bannerBtn.textContent = "Scoring…";
         }
 
         try {
@@ -3746,6 +3783,10 @@
           if (btn) {
             btn.disabled = false;
             btn.textContent = "End & Score";
+          }
+          if (bannerBtn) {
+            bannerBtn.disabled = false;
+            bannerBtn.textContent = "Score Interview →";
           }
         }
       }
@@ -4591,6 +4632,13 @@ print("__RESULTS__" + _j2.dumps(_results))
         <div class="fsc-stat"><div class="fsc-stat-num amber">${avgQual}</div><div class="fsc-stat-label">Avg Code Quality</div></div>
       </div>`;
         document.getElementById("coding-total-card").classList.add("visible");
+
+        // If interview is already complete, allow the interviewer to proceed now.
+        const bannerBtn = document.getElementById("end-interview-btn-banner");
+        if (bannerBtn && codingScoreData !== null) {
+          bannerBtn.disabled = false;
+          bannerBtn.textContent = "Score Interview →";
+        }
       }
 
       // ── Combined score card ───────────────────────────────────────────────────
